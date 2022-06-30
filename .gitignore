@@ -1,0 +1,9 @@
+execution/python/Terms.py
+
+target/*
+data/*
+/target/
+
+execution/examples/logs/*
+logs/*
+logs
