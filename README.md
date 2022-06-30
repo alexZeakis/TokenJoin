@@ -12,7 +12,7 @@ Javadoc is available [here]
 
 **Step 1**. Download or clone the project:
 ```sh
-$ git clone https://github.com/alexZeakis/TokenJoin2.git
+$ git clone https://github.com/alexZeakis/TokenJoin.git
 ```
 
 **Step 2**. Open terminal inside root folder and install by running:
