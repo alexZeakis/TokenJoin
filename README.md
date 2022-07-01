@@ -2,11 +2,11 @@
 
 ## Overview
 
-TokenJoin is an efficient method for solving the Fuzzy Set Similarity Join problem. It relies only on tokens and their scores, called _utilities_, and avoids computing expensive intermediate similarity functions. It is submitted to the International Conference on Very Large Databases (VLDB). This is the repository for the source codes.
+TokenJoin is an efficient method for solving the Fuzzy Set Similarity Join problem. It relies only on tokens and their defined _utilities_, avoiding pairwise comparisons between elements. It is submitted to the International Conference on Very Large Databases (VLDB). This is the repository for the source code.
 
 ## Documentation
 
-Javadoc is available [here](https://alexzeakis.github.io/TokenJoin/)
+Javadoc is available [here](https://alexzeakis.github.io/TokenJoin/).
 
 ## Usage
 
@@ -36,35 +36,28 @@ The selected combination should be included in the corresponding config file.
 
 ## Experiment execution
 
-There are 4 types of experiments conducted in TokenJoin.
+There are 4 groups of experiments conducted in TokenJoin. To reproduce the experiments mentioned in the paper, run the following commands.
 
-- Comparing ThresholdJoin methods based on varying thresholds for 6 datasets. 
-To reproduce the experiments mentioned in the paper, run:
+- Comparing ThresholdJoin methods based on varying thresholds.
 ```sh
 $ ./execution/examples/bash/threshold_run.sh
 ```
-This is a wrapper script for the 6 individual calls to the 6 datasets.
 
-- Comparing ThresholdJoin methods based on varying sizes for 6 datasets.
-To reproduce the experiments mentioned in the paper,  run:
+- Comparing ThresholdJoin methods based on varying dataset sizes.
 ```sh
 $ ./execution/examples/bash/scalability_run.sh
 ```
-This is a wrapper script for the 6 individual calls to the 6 datasets.
 
-- Comparing Verification methods in ThresholdJoin for 6 datasets.
-To reproduce the experiments mentioned in the paper, run:
+- Comparing Verification methods in ThresholdJoin.
 ```sh
 $ ./execution/examples/bash/verification_run.sh
 ```
-This is a wrapper script for the 6 individual calls to the 6 datasets.
 
-- Comparing TopkJoin methods based on varying ks for 6 datasets.
-To reproduce the experiments mentioned in the paper, run:
+- Comparing TopkJoin methods based on varying k.
 ```sh
 $ ./execution/examples/bash/topk_run.sh
 ```
-This is a wrapper script for the 6 individual calls to the 6 datasets.
+These are wrapper scripts for the 6 individual calls to the 6 datasets.
 
 Notice that in the `execution/examples/` we have smaller collection sizes and lighter JVM specifications. To run the original experimens, follow the same instructions but execute the corresponding scripts in `execution/experiments/`. Also notice that the existing logs inside `execution/experiments/` contain the original results and any new execution will be appended to the end of the file.
 
@@ -94,7 +87,7 @@ $ python execution/python/Topk.py execution/experiments/
 
 
 
-## Datasets.
+## Datasets
 We have used six real-world datasets:
 
 - [Yelp](https://www.yelp.com/dataset): 160,016 sets extracted from the Yelp Open Dataset. Each set refers to a business. Its elements are the categories associated to it.
@@ -110,14 +103,4 @@ We have used six real-world datasets:
 - [MIND](https://msnews.github.io): 123,130 articles from the MIcrosoft News Dataset. Each set corresponds to an article. The elements are the words in its abstract.
 
 The preprocessed versions of the datasets used in the experiments can be found [here](https://drive.google.com/drive/folders/1u9ixJM25koPkHi8FJ0atrHL1WcE8dtLw?usp=sharing).
-
-
-
-## License
-
-The contents of this project are licensed under the [Apache License 2.0](https://github.com/SLIPO-EU/loci/blob/master/LICENSE).
-
-## Acknowledgement
-
-This software is being developed in the context of the [SmartDataLake](https://smartdatalake.eu/) project. This project has received funding from the European Union’s [Horizon 2020 research and innovation programme](https://ec.europa.eu/programmes/horizon2020/en) under grant agreement No 825041.
 
