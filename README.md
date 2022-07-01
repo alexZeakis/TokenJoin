@@ -6,7 +6,7 @@ TokenJoin is an efficient method for solving the Fuzzy Set Similarity Join probl
 
 ## Documentation
 
-Javadoc is available [here]
+Javadoc is available [here](https://alexzeakis.github.io/TokenJoin/)
 
 ## Usage
 
