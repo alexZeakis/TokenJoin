@@ -2,7 +2,7 @@
 
 ## Overview
 
-TokenJoin is an efficient method for solving the Fuzzy Set Similarity Join problem. It relies only on tokens and their scores, called _utilities_, and avoids computing expensive intermediate similarity functions.
+TokenJoin is an efficient method for solving the Fuzzy Set Similarity Join problem. It relies only on tokens and their scores, called _utilities_, and avoids computing expensive intermediate similarity functions. It is submitted to the International Conference on Very Large Databases (VLDB). This is the repository for the source codes.
 
 ## Documentation
 
