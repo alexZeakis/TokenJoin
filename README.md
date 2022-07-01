@@ -57,7 +57,7 @@ To reproduce the experiments mentioned in the paper, run:
 ```sh
 $ ./execution/examples/bash/verification_run.sh
 ```
-This is a wrapper script for the single call to Enron.
+This is a wrapper script for the 6 individual calls to the 6 datasets.
 
 - Comparing TopkJoin methods based on varying ks for 6 datasets.
 To reproduce the experiments mentioned in the paper, run:
