@@ -1,0 +1,15 @@
+eu.smartdatalake.runners
+eu.smartdatalake.runners.experiments
+eu.smartdatalake.simjoin.alg
+eu.smartdatalake.simjoin.alg.threshold.edit
+eu.smartdatalake.simjoin.alg.threshold.jaccard
+eu.smartdatalake.simjoin.alg.topk
+eu.smartdatalake.simjoin.alg.topk.edit
+eu.smartdatalake.simjoin.alg.topk.jaccard
+eu.smartdatalake.simjoin.util
+eu.smartdatalake.simjoin.util.collection
+eu.smartdatalake.simjoin.util.index.edit
+eu.smartdatalake.simjoin.util.index.jaccard
+eu.smartdatalake.simjoin.util.record
+eu.smartdatalake.simjoin.util.record.edit
+eu.smartdatalake.simjoin.util.record.jaccard
