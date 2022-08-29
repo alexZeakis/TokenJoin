@@ -94,7 +94,7 @@ public class Silkmoth extends Algorithm {
 			String[] RRR = collection.originalStrings[R];
 
 			/* SIGNATURE GENERATION */
-			SMRecordInfo querySet = new SMRecordInfo(R, RR, QR, idx.lengths, idx.idx[R]);
+			SMRecordInfo querySet = new SMRecordInfo(R, RR, QR, idx.lengths, idx.idx[R], false);
 			querySet.computeUnflattenedSignature(idx, threshold, true, RRR);
 
 			// compute bounds for length filter

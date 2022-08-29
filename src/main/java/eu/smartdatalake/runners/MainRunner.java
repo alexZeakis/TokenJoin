@@ -56,7 +56,7 @@ public class MainRunner {
 						"Invalid similarity. Valid values are: " + Arrays.toString(similarities));
 
 			String[] types = { "threshold", "topk", "threshold_scalability", "threshold_verification",
-					"threshold_threshold" };
+					"threshold_threshold", "threshold_filtering" };
 			if (type != null && !Arrays.asList(types).contains(type))
 				throw new IllegalArgumentException("Invalid type. Valid values are: " + Arrays.toString(types));
 
@@ -88,7 +88,7 @@ public class MainRunner {
 //				execConfig = (JSONObject) execConfig.get(type);
 
 				if (similarity.equals("jaccard")) {
-					if (type.equals("threshold_threshold") || type.equals("threshold_verification")) {
+					if (type.equals("threshold_threshold") || type.equals("threshold_verification") || type.equals("threshold_filtering")) {
 						ThresholdJaccardThreshold.run(readConfig, execConfig);
 					} else if (type.equals("threshold_scalability")) {
 						ThresholdJaccardScalability.run(readConfig, execConfig);
@@ -96,7 +96,7 @@ public class MainRunner {
 						TopKJaccardK.run(readConfig, execConfig);
 					}
 				} else if (similarity.equals("edit")) {
-					if (type.equals("threshold_threshold") || type.equals("threshold_verification")) {
+					if (type.equals("threshold_threshold") || type.equals("threshold_verification") || type.equals("threshold_filtering")) {
 						ThresholdEditThreshold.run(readConfig, execConfig);
 					} else if (type.equals("threshold_scalability")) {
 						ThresholdEditScalability.run(readConfig, execConfig);

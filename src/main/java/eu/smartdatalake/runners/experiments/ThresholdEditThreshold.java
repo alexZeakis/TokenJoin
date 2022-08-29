@@ -8,8 +8,10 @@ import org.json.simple.JSONObject;
 import eu.smartdatalake.runners.ThresholdCompetitor;
 import eu.smartdatalake.simjoin.alg.Algorithm;
 import eu.smartdatalake.simjoin.alg.threshold.edit.Silkmoth;
+import eu.smartdatalake.simjoin.alg.threshold.edit.SilkmothF;
 import eu.smartdatalake.simjoin.alg.threshold.edit.TokenJoin;
 import eu.smartdatalake.simjoin.alg.threshold.edit.TokenJoinV;
+import eu.smartdatalake.simjoin.alg.threshold.edit.TokenJoinF;
 import eu.smartdatalake.simjoin.util.collection.FuzzyIntSetCollection;
 import eu.smartdatalake.simjoin.util.collection.FuzzySetCollectionReader;
 
@@ -39,26 +41,38 @@ public class ThresholdEditThreshold {
 			Iterator<Long> modelIterator = models.iterator();
 			while (modelIterator.hasNext()) {
 				int model = modelIterator.next().intValue();
-				
+
 				Algorithm alg = null;
 				switch (model) {
 				case 0: // SM;
-					alg = new Silkmoth(new ThresholdCompetitor("SM"));
+					alg = new Silkmoth(new ThresholdCompetitor("SM", false));
 					break;
 				case 1: // TJB
-					alg = new TokenJoin(new ThresholdCompetitor("TJB", false, false, 0));
+					alg = new TokenJoin(new ThresholdCompetitor("TJB", false, false, 0, true));
 					break;
 				case 2: // TJP
-					alg = new TokenJoin(new ThresholdCompetitor("TJP", true, false, 0));
+					alg = new TokenJoin(new ThresholdCompetitor("TJP", true, false, 0, true));
 					break;
 				case 3: // TJPJ
-					alg = new TokenJoin(new ThresholdCompetitor("TJPJ", true, true, 0));
+					alg = new TokenJoin(new ThresholdCompetitor("TJPJ", true, true, 0, true));
 					break;
 				case 4: // TJV
-					alg = new TokenJoinV(new ThresholdCompetitor("TJPJ - VUL", true, true, 2));
+					alg = new TokenJoinV(new ThresholdCompetitor("TJPJ - VUL", true, true, 2, true));
+					break;
+				case 5: // TJF
+					alg = new TokenJoinF(new ThresholdCompetitor("TJF", true, true, 2, true));
+					break;
+				case 6: // SMF
+					alg = new SilkmothF(new ThresholdCompetitor("SMF", false));
+					break;
+				case 7: // SM;
+					alg = new Silkmoth(new ThresholdCompetitor("SM-G", true));
+					break;	
+				case 8: // TJB
+					alg = new TokenJoin(new ThresholdCompetitor("TJB-L", false, false, 0, false));
 					break;					
 				}
-				
+
 				alg.selfJoin(collection, threshold);
 			}
 		}

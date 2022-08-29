@@ -90,7 +90,7 @@ public class Silkmoth extends Algorithm {
 			pb.progressK(joinTime, threshold);
 
 			/* SIGNATURE GENERATION */
-			SMRecordInfo querySet = new SMRecordInfo(R, collection.sets[R], idx.lengths, idx.idx[R]);
+			SMRecordInfo querySet = new SMRecordInfo(R, collection.sets[R], idx.lengths, idx.idx[R], false);
 			querySet.computeUnflattenedSignature(idx, threshold, true, collection.sets[R]);
 
 			// compute bounds for length filter

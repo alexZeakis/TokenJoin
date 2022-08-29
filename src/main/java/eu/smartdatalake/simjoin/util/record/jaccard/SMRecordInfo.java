@@ -11,12 +11,13 @@ import gnu.trove.list.array.TIntArrayList;
 import gnu.trove.map.TIntObjectMap;
 
 /**
- * Class containing necessary information about a record, i.e. order of tokens, θ and signatures.
+ * Class containing necessary information about a record, i.e. order of tokens,
+ * θ and signatures.
  *
  */
-public class SMRecordInfo  {
+public class SMRecordInfo {
 	public static long cachedCounter = 0, counter = 0, cachedSimilar = 0;
-	
+
 	public int index;
 	public int recordLength;
 	public double theta;
@@ -28,7 +29,8 @@ public class SMRecordInfo  {
 
 	public TIntList KTR;
 
-	public SMRecordInfo(int index, int[][] querySet, int[][] lengths, TIntObjectMap<IndexTokenScore> values) {
+	public SMRecordInfo(int index, int[][] querySet, int[][] lengths, TIntObjectMap<IndexTokenScore> values,
+			boolean globalOrdering) {
 		this.index = index;
 		recordLength = querySet.length;
 
@@ -38,7 +40,8 @@ public class SMRecordInfo  {
 		int i = 0;
 		while (it.hasNext()) {
 			it.advance();
-			tokens[i++] = new RecordTokenScore(it.key(), lengths[it.key()].length / it.value().value, it.value().value);
+			double score = (globalOrdering) ? it.key() : lengths[it.key()].length / it.value().value;
+			tokens[i++] = new RecordTokenScore(it.key(), score, it.value().value);
 		}
 
 		Arrays.parallelSort(tokens);
@@ -71,7 +74,7 @@ public class SMRecordInfo  {
 			for (int r : idx.idx[index].get(bestToken).elements)
 				unflattenedSignature[r].add(bestToken);
 		}
-		
+
 		elementBounds = new double[R.length];
 		for (int r = 0; r < R.length; r++) {
 			elementBounds[r] = (double) (R[r].length - unflattenedSignature[r].size()) / (double) R[r].length;

@@ -44,19 +44,19 @@ public class ThresholdJaccardScalability {
 				Algorithm alg = null;
 				switch (model) {
 				case 0: // SM;
-					alg = new Silkmoth(new ThresholdCompetitor("SM"));
+					alg = new Silkmoth(new ThresholdCompetitor("SM", false));
 					break;
 				case 1: // TJB
-					alg = new TokenJoin(new ThresholdCompetitor("TJB", false, false, 0));
+					alg = new TokenJoin(new ThresholdCompetitor("TJB", false, false, 0, true));
 					break;
 				case 2: // TJP
-					alg = new TokenJoin(new ThresholdCompetitor("TJP", true, false, 0));
+					alg = new TokenJoin(new ThresholdCompetitor("TJP", true, false, 0, true));
 					break;
 				case 3: // TJPJ
-					alg = new TokenJoin(new ThresholdCompetitor("TJPJ", true, true, 0));
+					alg = new TokenJoin(new ThresholdCompetitor("TJPJ", true, true, 0, true));
 					break;
 				case 4: // TJV
-					alg = new TokenJoinV(new ThresholdCompetitor("TJH - VUL", true, true, 2));
+					alg = new TokenJoinV(new ThresholdCompetitor("TJH - VUL", true, true, 2, true));
 					break;
 				}
 

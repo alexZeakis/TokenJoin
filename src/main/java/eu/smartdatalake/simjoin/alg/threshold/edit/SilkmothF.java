@@ -21,12 +21,12 @@ import gnu.trove.set.hash.TIntHashSet;
  * Class for executing Silkmoth with Edit Similarity.
  *
  */
-public class Silkmoth extends Algorithm {
+public class SilkmothF extends Algorithm {
 	boolean self, globalOrdering;
 	String method;
 
 	@SuppressWarnings("unchecked")
-	public Silkmoth(ThresholdCompetitor c) {
+	public SilkmothF(ThresholdCompetitor c) {
 		this.method = c.method;
 		this.self = c.self;
 		this.globalOrdering = c.globalOrdering;
@@ -109,6 +109,9 @@ public class Silkmoth extends Algorithm {
 			while (it2.hasNext()) {
 				int S = it2.next();
 				int candLength = collection.sets[S].length;
+				
+				long localFilterTime = System.nanoTime();
+
 				long localStartTime2 = System.nanoTime();
 				double[][] hits = new double[recLength][];
 				double[] nearestNeighborSim = new double[recLength];
@@ -145,6 +148,8 @@ public class Silkmoth extends Algorithm {
 
 				CFTime += System.nanoTime() - localStartTime2;
 				if (!pass) {
+					localFilterTime = System.nanoTime() - localFilterTime;
+					logger.info(String.format("blas,%s,%s,%s", recLength, candLength, localFilterTime/ 1000000000.0));
 					continue;
 				}
 				CFCands++;
@@ -212,9 +217,14 @@ public class Silkmoth extends Algorithm {
 				double score = totalUB / (recLength + candLength - totalUB);
 
 				if (threshold - score > 0.000000001) {
+					localFilterTime = System.nanoTime() - localFilterTime;
+					logger.info(String.format("blas,%s,%s,%s", recLength, candLength, localFilterTime/ 1000000000.0));
 					continue;
 				}
 				NNFCands++;
+				
+				localFilterTime = System.nanoTime() - localFilterTime;
+				logger.info(String.format("blas,%s,%s,%s", recLength, candLength, localFilterTime/ 1000000000.0));
 
 				verifiable++;
 				/* VERIFICATION */

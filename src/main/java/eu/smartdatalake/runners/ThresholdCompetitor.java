@@ -43,26 +43,28 @@ public class ThresholdCompetitor {
 	 *                         algorithm, 1 for Hungarian algorithm + Upper Bounds,
 	 *                         2 for Hungarian algorithm + Upper {@literal &} Lower
 	 *                         Bounds.
+	 * @param globalOrdering   Whether to use globalOrdering.
 	 */
-	public ThresholdCompetitor(String method, boolean posFilter, boolean jointFilter, int verificationAlg) {
+	public ThresholdCompetitor(String method, boolean posFilter, boolean jointFilter, int verificationAlg,
+			boolean globalOrdering) {
 		this.method = method;
 		this.self = true;
-//		this.globalOrdering = posFilter;
-		this.globalOrdering = true;
+		this.globalOrdering = globalOrdering;
 		this.posFilter = posFilter;
 		this.jointFilter = jointFilter;
 		this.verificationAlg = verificationAlg;
 	}
 
-	public ThresholdCompetitor(String method) {
+	public ThresholdCompetitor(String method, boolean globalOrdering) {
 		this.method = method;
 		this.self = true;
+		this.globalOrdering = globalOrdering;
 	}
 
 	public ThresholdCompetitor(JSONObject args) {
 		this.method = String.valueOf(args.get("method"));
 		this.self = true;
-		this.globalOrdering = Boolean.parseBoolean(String.valueOf(args.get("posFilter")));
+		this.globalOrdering = Boolean.parseBoolean(String.valueOf(args.get("globalOrdering")));
 		this.posFilter = Boolean.parseBoolean(String.valueOf(args.get("posFilter")));
 		this.jointFilter = Boolean.parseBoolean(String.valueOf(args.get("jointFilter")));
 		this.verificationAlg = Integer.parseInt(String.valueOf(args.get("verificationAlg")));

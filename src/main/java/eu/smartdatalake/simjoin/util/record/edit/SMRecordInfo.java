@@ -13,12 +13,13 @@ import gnu.trove.list.array.TIntArrayList;
 import gnu.trove.map.TIntObjectMap;
 
 /**
- * Class containing necessary information about a record, i.e. order of tokens, θ and signatures.
+ * Class containing necessary information about a record, i.e. order of tokens,
+ * θ and signatures.
  *
  */
-public class SMRecordInfo  {
+public class SMRecordInfo {
 	public static long cachedCounter = 0, counter = 0, cachedSimilar = 0;
-	
+
 	public int index;
 	public int recordLength;
 	public double theta;
@@ -30,21 +31,22 @@ public class SMRecordInfo  {
 
 	public TIntList KTR;
 
-	public SMRecordInfo(int index, int[][] querySet, int[][] qR, int[][] lengths, TIntObjectMap<IndexTokenScore> values) {
+	public SMRecordInfo(int index, int[][] querySet, int[][] qR, int[][] lengths, TIntObjectMap<IndexTokenScore> values,
+			boolean globalOrdering) {
 		this.index = index;
 		recordLength = querySet.length;
 
-		List<RecordTokenScore> tempTokens = new ArrayList<RecordTokenScore>(); 
+		List<RecordTokenScore> tempTokens = new ArrayList<RecordTokenScore>();
 		TIntObjectIterator<IndexTokenScore> it = values.iterator();
 		while (it.hasNext()) {
 			it.advance();
-			if (it.value().value == 0.0)	//not a qchunk
+			if (it.value().value == 0.0) // not a qchunk
 				continue;
-			double score = lengths[it.key()].length / it.value().value;
+			double score = (globalOrdering) ? it.key(): lengths[it.key()].length / it.value().value;
 			tempTokens.add(new RecordTokenScore(it.key(), score, it.value().value));
 		}
 		tokens = new RecordTokenScore[tempTokens.size()];
-		for (int i=0; i<tempTokens.size(); i++) {
+		for (int i = 0; i < tempTokens.size(); i++) {
 			tokens[i] = tempTokens.get(i);
 		}
 		Arrays.parallelSort(tokens);
@@ -77,11 +79,10 @@ public class SMRecordInfo  {
 			for (int r : idx.idx[index].get(bestToken).elements)
 				unflattenedSignature[r].add(bestToken);
 		}
-		
-		
+
 		elementBounds = new double[strings.length];
 		for (int r = 0; r < strings.length; r++) {
-			elementBounds[r] = 1 - 1.0 * unflattenedSignature[r].size() / strings[r].length() ;
+			elementBounds[r] = 1 - 1.0 * unflattenedSignature[r].size() / strings[r].length();
 		}
 	}
 }

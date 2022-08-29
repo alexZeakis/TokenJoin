@@ -22,13 +22,14 @@ import gnu.trove.set.hash.TIntHashSet;
  *
  */
 public class Silkmoth extends Algorithm {
-	boolean self;
+	boolean self, globalOrdering;
 	String method;
 
 	@SuppressWarnings("unchecked")
 	public Silkmoth(ThresholdCompetitor c) {
 		this.method = c.method;
 		this.self = c.self;
+		this.globalOrdering = c.globalOrdering;
 		log = new JSONObject();
 		JSONObject args = new JSONObject();
 		args.put("self", self);
@@ -64,7 +65,7 @@ public class Silkmoth extends Algorithm {
 
 			/* SIGNATURE GENERATION */
 			long localStartTime = System.nanoTime();
-			SMRecordInfo querySet = new SMRecordInfo(R, collection.sets[R], idx.lengths, idx.idx[R]);
+			SMRecordInfo querySet = new SMRecordInfo(R, collection.sets[R], idx.lengths, idx.idx[R], globalOrdering);
 			querySet.computeUnflattenedSignature(idx, threshold, self, collection.sets[R]);
 			signatureGenerationTime += System.nanoTime() - localStartTime;
 

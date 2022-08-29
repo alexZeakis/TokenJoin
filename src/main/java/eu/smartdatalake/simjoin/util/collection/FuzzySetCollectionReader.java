@@ -33,6 +33,8 @@ import gnu.trove.set.hash.TIntHashSet;
  */
 public class FuzzySetCollectionReader {
 	protected static final Logger logger = LogManager.getLogger(FuzzySetCollectionReader.class);
+	protected static long over400 = 0;
+	protected static final int overLimit = 400;
 
 	/**
 	 * @param readConfig:      Config (JSON) file of the selected source file
@@ -96,9 +98,13 @@ public class FuzzySetCollectionReader {
 		String columnDelimiter = String.valueOf(readConfig.get("column_delimiter"));
 		if (columnDelimiter.equals("null") || columnDelimiter.equals(""))
 			columnDelimiter = " ";
-		String tokenDelimiter = String.valueOf(readConfig.get("token_delimiter"));
-		if (tokenDelimiter.equals("null") || tokenDelimiter.equals(""))
-			tokenDelimiter = " ";
+		String elementDelimiter = String.valueOf(readConfig.get("element_delimiter"));
+		if (elementDelimiter.equals("null") || elementDelimiter.equals(""))
+			elementDelimiter = " ";
+		String tokenDelimiter = null;
+		if (readConfig.containsKey("token_delimiter"))
+			tokenDelimiter = String.valueOf(readConfig.get("token_delimiter"));
+
 		boolean header = Boolean.parseBoolean(String.valueOf(readConfig.get("header")));
 		String tokenizer = "qgram";
 
@@ -152,14 +158,15 @@ public class FuzzySetCollectionReader {
 					} else
 						record_id = columns[colSetId];
 
-					String[] words = columns[colSetTokens].toLowerCase().split(tokenDelimiter);
+					String[] words = columns[colSetTokens].toLowerCase().split(elementDelimiter);
 					if (words.length < 1) {
 						errorLines++;
 						continue;
 					}
 
-					if (words.length > 400) {
-						words = Arrays.copyOf(words, 400);	//first 400 words
+					if (words.length > overLimit) {
+						words = Arrays.copyOf(words, overLimit); // first 400 words
+						over400++;
 					}
 
 					// Deduplication
@@ -175,30 +182,40 @@ public class FuzzySetCollectionReader {
 					for (String word : words) {
 						ArrayList<String> tokens, tokens2;
 
-						// Max $$ added.
-						String word2 = word + StringUtils.repeat('$', qgram - 1);
-						// Removed extra $ to fit qchunks
-						int leftChars = word2.length() % qgram;
-						word2 = word2.substring(0, word2.length() - leftChars);
+						if (tokenDelimiter == null) {
+							// Max $$ added.
+							String word2 = word + StringUtils.repeat('$', qgram - 1);
+							// Removed extra $ to fit qchunks
+							int leftChars = word2.length() % qgram;
+							word2 = word2.substring(0, word2.length() - leftChars);
 
-						if (tokenizer.equals("qgram"))
-							tokens = getTokens(word2, "qgram", qgram, null);
-						else
-							tokens = getTokens(word2, "word", qgram, null);
-						if (tokens.size() == 0) {
-							continue;
+							if (tokenizer.equals("qgram"))
+								tokens = getTokens(word2, "qgram", qgram, null);
+							else
+								tokens = getTokens(word2, "word", qgram, null);
+							
+							if (tokens.size() == 0) {
+								continue;
+							}
+							
+							if (keepOriginal) {
+								// Not saved word2, but word
+								original.add(word2);
+								tokens2 = getQChunks(word2, qgram, null);
+								elements2.add(tokens2);
+							}
+							
+						} else {
+							tokens = new ArrayList<String>();
+							for (String token : word.split(tokenDelimiter))
+							tokens.add(token);
+							
+							if (tokens.size() == 0) {
+								continue;
+							}
 						}
-
+						
 						elements.add(tokens);
-						if (keepOriginal) {
-
-							// Not saved word2, but word
-							original.add(word2);
-
-							tokens2 = getQChunks(word2, qgram, null);
-							elements2.add(tokens2);
-						}
-
 						tokensPerElement += tokens.size();
 					}
 					if (elements.size() < 1) {
@@ -234,6 +251,7 @@ public class FuzzySetCollectionReader {
 		System.out.println("Finished reading file. Lines read: " + lines + ". Lines skipped due to errors: "
 				+ errorLines + ". Num of sets: " + collection.size() + ". Elements per set: " + elementsPerSet
 				+ ". Tokens per Element: " + tokensPerElement);
+//		System.out.println("Over 400 elements were: " + over400);
 
 		collection.hashCodes = hashCodes;
 
