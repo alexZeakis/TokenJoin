@@ -34,7 +34,8 @@ import gnu.trove.set.hash.TIntHashSet;
 public class FuzzySetCollectionReader {
 	protected static final Logger logger = LogManager.getLogger(FuzzySetCollectionReader.class);
 	protected static long over400 = 0;
-	protected static final int overLimit = 400;
+	protected static final int upperLimit = 10;
+	protected static final int lowerLimit = 1;
 
 	/**
 	 * @param readConfig:      Config (JSON) file of the selected source file
@@ -106,7 +107,6 @@ public class FuzzySetCollectionReader {
 			tokenDelimiter = String.valueOf(readConfig.get("token_delimiter"));
 
 		boolean header = Boolean.parseBoolean(String.valueOf(readConfig.get("header")));
-		String tokenizer = "qgram";
 
 		int qgram = 3;
 
@@ -133,11 +133,23 @@ public class FuzzySetCollectionReader {
 
 		Map<String, Integer> hashCodes = new HashMap<String, Integer>();
 
+		String line, tempString;
+		String[] columns, words;
+
+//		ArrayList<ArrayList<String>> elements, elements2;
+//		ArrayList<String> tokens, tokens2, original;
+//		TObjectIntMap<String> tempTokens, tempTokens2;
+
+		ArrayList<ArrayList<String>> elements = new ArrayList<ArrayList<String>>();
+		ArrayList<ArrayList<String>> elements2 = new ArrayList<ArrayList<String>>();
+		ArrayList<String> tokens = new ArrayList<String>();
+		ArrayList<String> tokens2 = new ArrayList<String>();
+		ArrayList<String> original = new ArrayList<String>();
+		TObjectIntMap<String> tempTokens = new TObjectIntHashMap<String>();
+		TObjectIntMap<String> tempTokens2 = new TObjectIntHashMap<String>();
+
 		try {
 			br = new BufferedReader(new FileReader(file));
-
-			String line;
-			String[] columns;
 
 			// if the file has header, ignore the first line
 			if (header) {
@@ -146,6 +158,12 @@ public class FuzzySetCollectionReader {
 
 			while ((line = br.readLine()) != null) {
 				lines++;
+				
+				if (lines % 10000 == 0) {
+					String msg = String.format("Lines read: %d\r", lines);
+					System.out.print(msg);
+				}
+				
 				try {
 					if (!sample.contains(lines)) {
 						continue;
@@ -158,29 +176,35 @@ public class FuzzySetCollectionReader {
 					} else
 						record_id = columns[colSetId];
 
-					String[] words = columns[colSetTokens].toLowerCase().split(elementDelimiter);
-					if (words.length < 1) {
+					words = columns[colSetTokens].toLowerCase().split(elementDelimiter);
+					
+					if (words.length < lowerLimit) {
 						errorLines++;
 						continue;
 					}
 
-					if (words.length > overLimit) {
-						words = Arrays.copyOf(words, overLimit); // first 400 words
+					if (words.length > upperLimit) {
+						words = Arrays.copyOf(words, upperLimit); // first 400 words
 						over400++;
 					}
 
 					// Deduplication
 					Arrays.sort(words);
-					String tempString = Arrays.toString(words);
+					tempString = Arrays.toString(words);
 					int hash = tempString.hashCode();
 					hashCodes.put(record_id, hash);
 
-					ArrayList<ArrayList<String>> elements = new ArrayList<ArrayList<String>>();
-					ArrayList<String> original = new ArrayList<String>();
-					ArrayList<ArrayList<String>> elements2 = new ArrayList<ArrayList<String>>();
+					elements = new ArrayList<ArrayList<String>>();
+					original = new ArrayList<String>();
+					elements2 = new ArrayList<ArrayList<String>>();
+//					elements.clear();
+//					original.clear();
+//					elements2.clear();
 
 					for (String word : words) {
-						ArrayList<String> tokens, tokens2;
+
+//						tempTokens.clear();
+//						tokens.clear();
 
 						if (tokenDelimiter == null) {
 							// Max $$ added.
@@ -189,32 +213,62 @@ public class FuzzySetCollectionReader {
 							int leftChars = word2.length() % qgram;
 							word2 = word2.substring(0, word2.length() - leftChars);
 
-							if (tokenizer.equals("qgram"))
-								tokens = getTokens(word2, "qgram", qgram, null);
-							else
-								tokens = getTokens(word2, "word", qgram, null);
+							tempTokens = new TObjectIntHashMap<String>();
+							tokens = new ArrayList<String>();
 							
+							String token = word2;
+							for (int i = 0; i <= token.length() - qgram; i++) {
+								tempTokens.adjustOrPutValue(token.substring(i, i + qgram), 1, 1);
+							}
+
+
+							for (String key : tempTokens.keySet()) {
+								for (int val = 0; val < tempTokens.get(key); val++) {
+									tokens.add(key + "@" + val);
+								}
+							}
+
 							if (tokens.size() == 0) {
 								continue;
 							}
-							
+
 							if (keepOriginal) {
 								// Not saved word2, but word
 								original.add(word2);
-								tokens2 = getQChunks(word2, qgram, null);
+								
+								tempTokens2 = new TObjectIntHashMap<String>();
+								tokens2 = new ArrayList<String>();
+//								tokens2.clear();
+//								tempTokens2.clear();
+
+								String token2 = word2;
+								for (int i = 0; i <= token2.length() - qgram; i += qgram) {
+									tempTokens2.adjustOrPutValue(token2.substring(i, i + qgram), 1, 1);
+								}
+
+
+								for (String key : tempTokens2.keySet()) {
+									for (int val = 0; val < tempTokens2.get(key); val++) {
+										tokens2.add(key + "@" + val);
+									}
+								}
 								elements2.add(tokens2);
 							}
-							
+
 						} else {
 							tokens = new ArrayList<String>();
 							for (String token : word.split(tokenDelimiter))
-							tokens.add(token);
+								tokens.add(token);
 							
 							if (tokens.size() == 0) {
 								continue;
 							}
+							
+							//TODO: REMOVE
+//							if (tokens.size() < 5 || tokens.size() > 15)
+//								continue;
 						}
-						
+
 						elements.add(tokens);
 						tokensPerElement += tokens.size();
 					}
@@ -256,54 +310,6 @@ public class FuzzySetCollectionReader {
 		collection.hashCodes = hashCodes;
 
 		return collection;
-	}
-
-	/* Split element to tokens */
-	private static ArrayList<String> getTokens(String line, String tokenizer, int qgram, String tokenDelimiter) {
-
-		TObjectIntMap<String> tokens = new TObjectIntHashMap<String>();
-		if (tokenizer.equals("qgram")) {
-			String token = line;
-			for (int i = 0; i <= token.length() - qgram; i++) {
-				tokens.adjustOrPutValue(token.substring(i, i + qgram), 1, 1);
-			}
-		} else {
-			if (tokenDelimiter != null) {
-				for (String tok : Arrays.asList(line.split(tokenDelimiter))) {
-					if (!tok.equals(""))
-						tokens.adjustOrPutValue(tok, 1, 1);
-				}
-			} else {
-				tokens.put(line, 1);
-			}
-		}
-
-		ArrayList<String> tokens2 = new ArrayList<String>();
-		for (String key : tokens.keySet()) {
-			for (int val = 0; val < tokens.get(key); val++) {
-				tokens2.add(key + "@" + val);
-			}
-		}
-
-		return tokens2;
-	}
-
-	private static ArrayList<String> getQChunks(String line, int qgram, String tokenDelimiter) {
-
-		TObjectIntMap<String> tokens = new TObjectIntHashMap<String>();
-		String token = line;
-		for (int i = 0; i <= token.length() - qgram; i += qgram) {
-			tokens.adjustOrPutValue(token.substring(i, i + qgram), 1, 1);
-		}
-
-		ArrayList<String> tokens2 = new ArrayList<String>();
-		for (String key : tokens.keySet()) {
-			for (int val = 0; val < tokens.get(key); val++) {
-				tokens2.add(key + "@" + val);
-			}
-		}
-
-		return tokens2;
 	}
 
 	/* Construct Token Dictionary, String to Int */
@@ -386,6 +392,7 @@ public class FuzzySetCollectionReader {
 				}
 				j++;
 			}
+			elements.clear();
 			i++;
 		}
 

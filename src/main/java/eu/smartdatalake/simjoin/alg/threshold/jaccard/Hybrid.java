@@ -12,8 +12,12 @@ import eu.smartdatalake.simjoin.util.Verification;
 import eu.smartdatalake.simjoin.util.collection.FuzzyIntSetCollection;
 import eu.smartdatalake.simjoin.util.index.jaccard.FuzzySetIndex;
 import eu.smartdatalake.simjoin.util.index.jaccard.IndexTokenScore;
+import eu.smartdatalake.simjoin.util.record.RecordTokenScore;
 import eu.smartdatalake.simjoin.util.record.jaccard.SMRecordInfo;
-import gnu.trove.iterator.TIntIterator;
+import eu.smartdatalake.simjoin.util.record.jaccard.TJRecordInfo;
+import gnu.trove.iterator.TIntDoubleIterator;
+import gnu.trove.map.TIntDoubleMap;
+import gnu.trove.map.hash.TIntDoubleHashMap;
 import gnu.trove.set.TIntSet;
 import gnu.trove.set.hash.TIntHashSet;
 
@@ -21,13 +25,13 @@ import gnu.trove.set.hash.TIntHashSet;
  * Class for executing Silkmoth with Jaccard Similarity.
  *
  */
-public class Silkmoth extends Algorithm {
+public class Hybrid extends Algorithm {
 	boolean self, globalOrdering;
 	String method;
 	int verificationAlg;
 
 	@SuppressWarnings("unchecked")
-	public Silkmoth(ThresholdCompetitor c) {
+	public Hybrid(ThresholdCompetitor c) {
 		this.method = c.method;
 		this.self = c.self;
 		this.globalOrdering = c.globalOrdering;
@@ -40,9 +44,8 @@ public class Silkmoth extends Algorithm {
 
 	/**
 	 * Method to perform Join.
-	 * 
 	 * @param collection: Collection of records
-	 * @param threshold:  Threshold of Join
+	 * @param threshold: Threshold of Join
 	 */
 	@SuppressWarnings("unchecked")
 	public void selfJoin(FuzzyIntSetCollection collection, double threshold) {
@@ -59,14 +62,6 @@ public class Silkmoth extends Algorithm {
 		idx.buildIndex(collection);
 		indexTime = System.nanoTime() - indexTime;
 
-		int maxRecLength = collection.sets[collection.sets.length - 1].length;
-		double[] nearestNeighborSim = new double[maxRecLength];
-		double[][] hits = new double[maxRecLength][];
-		for (int nor = 0; nor < maxRecLength; nor++)
-			hits[nor] = new double[maxRecLength];
-		boolean[] matchedElements = new boolean[maxRecLength];
-		TIntSet cands = new TIntHashSet();
-		
 		/* EXECUTE THE JOIN ALGORITHM */
 		ProgressBar pb = new ProgressBar(collection.sets.length);
 
@@ -76,77 +71,85 @@ public class Silkmoth extends Algorithm {
 
 			/* SIGNATURE GENERATION */
 			long localStartTime = System.nanoTime();
-			SMRecordInfo querySet = new SMRecordInfo(R, collection.sets[R], idx.lengths, idx.idx[R], globalOrdering);
-			querySet.computeUnflattenedSignature(idx, threshold, self, collection.sets[R]);
+			SMRecordInfo querySet_SM = new SMRecordInfo(R, collection.sets[R], idx.lengths, idx.idx[R], globalOrdering);
+			querySet_SM.computeUnflattenedSignature(idx, threshold, self, collection.sets[R]);
+			TJRecordInfo querySet_TJ = new TJRecordInfo(R, collection.sets[R], idx.lengths, idx.idx[R], threshold,
+					globalOrdering, self);
 			signatureGenerationTime += System.nanoTime() - localStartTime;
 
 			localStartTime = System.nanoTime();
 
-			// compute bounds for length filter
+			/* CANDIDATE GENERATION */
+			TIntDoubleMap cands = new TIntDoubleHashMap();
 			int recLength = collection.sets[R].length;
 			int recMaxLength = (int) Math.floor(recLength / threshold);
 
-			/* CANDIDATE GENERATION */
+			int posTok = 0;
+			for (posTok = 0; posTok < querySet_TJ.tokens.length; posTok++) {
+				RecordTokenScore tokenScore = querySet_TJ.tokens[posTok];
+				int token = tokenScore.id;
+				double zetUtilScore = tokenScore.utility;
 
-			TIntIterator it = querySet.KTR.iterator();
-			while (it.hasNext()) {
-				int token = it.next();
-
-				int true_min = Arrays.binarySearch(idx.lengths[token], R); // true_min is > 0, since i is in tokenList
+				int true_min = Arrays.binarySearch(idx.lengths[token], R); // true_min is > 0, since R is in tokenList
 				int[] tempCands = idx.lengths[token];
-				int tempSize = tempCands.length;
+				int tempLen = tempCands.length;
 
-				for (int Si = true_min; Si < tempSize; Si++) {
+				if (querySet_TJ.theta - querySet_TJ.sumStopped > 0.0000001)
+					break;
+
+				querySet_TJ.sumStopped -= zetUtilScore;
+
+				for (int Si = true_min; Si < tempLen; Si++) {
 					int S = tempCands[Si];
 					if (R == S)
 						continue;
 					if (collection.sets[S].length > recMaxLength) {
 						break;
 					}
-					cands.add(S);
+
+					cands.adjustOrPutValue(S, zetUtilScore, zetUtilScore);
 				}
 			}
 
 			candGenands += cands.size();
 			candGenTime += System.nanoTime() - localStartTime;
 
-			int candLength = maxRecLength;
-			
-			TIntIterator it2 = cands.iterator();
+			TIntDoubleIterator it2 = cands.iterator();
 			while (it2.hasNext()) {
-				int S = it2.next();
-				
+				it2.advance();
+				int S = it2.key();
+				int candLength = collection.sets[S].length;
 				long localStartTime2 = System.nanoTime();
-				for (int nor = 0; nor < recLength; nor++) {
-					nearestNeighborSim[nor] = 0.0;
-				}
-				int priorCandLength = candLength;
-				candLength = collection.sets[S].length;
+				double[][] hits = new double[recLength][];
+				double[] nearestNeighborSim = new double[recLength];
 				initTime += System.nanoTime() - localStartTime2;
 
 				localStartTime2 = System.nanoTime();
 				/* CHECK FILTER */
 
 				boolean pass = false;
-				for (int r = 0; r < querySet.unflattenedSignature.length; r++) {
-					for (int nos = 0; nos < priorCandLength; nos++)
-						hits[r][nos] = 0.0;
+				for (int r = 0; r < querySet_SM.unflattenedSignature.length; r++) {
+					hits[r] = new double[candLength];
 					double maxNN = 0.0;
 
-					for (int t = 0; t < querySet.unflattenedSignature[r].size(); t++) {
-						int token = querySet.unflattenedSignature[r].get(t);
+					for (int t = 0; t < querySet_SM.unflattenedSignature[r].size(); t++) {
+						int token = querySet_SM.unflattenedSignature[r].get(t);
 						IndexTokenScore tok = idx.idx[S].get(token);
 						if (tok == null)
 							continue;
 						for (int s : tok.elements) {
 							hits[r][s] = Verification.verifyWithScore(collection.sets[R][r], collection.sets[S][s]);
-							if (hits[r][s] >= querySet.elementBounds[r]) {
+							if (hits[r][s] >= querySet_SM.elementBounds[r]) {
 								pass = true;
 							}
 							maxNN = Math.max(hits[r][s], maxNN);
 						}
 					}
-					nearestNeighborSim[r] = maxNN;
+
+					if (maxNN > 0) { // element had signature tokens
+						nearestNeighborSim[r] = maxNN;
+					}
+
 				}
 
 				CFTime += System.nanoTime() - localStartTime2;
@@ -158,26 +161,25 @@ public class Silkmoth extends Algorithm {
 				/* NEAREST NEIGHBOR FILTER */
 				localStartTime2 = System.nanoTime();
 				double persThreshold = threshold / (1.0 + threshold) * (recLength + candLength);
+				TIntSet matchedElements;
 
 				double totalUB = 0;
+				matchedElements = new TIntHashSet();
 				for (int r = 0; r < collection.sets[R].length; r++) {
-					if (nearestNeighborSim[r] > querySet.elementBounds[r]) {
-						matchedElements[r] = true;
+					if (nearestNeighborSim[r] > querySet_SM.elementBounds[r]) {
+						matchedElements.add(r);
 						totalUB += nearestNeighborSim[r];
 					} else {
-						matchedElements[r] = false;
-						totalUB += querySet.elementBounds[r];
+						totalUB += querySet_SM.elementBounds[r];
 					}
 				}
 
 				for (int r = 0; r < recLength; r++) {
-					if (matchedElements[r]) {
+					if (matchedElements.contains(r)) {
 						continue;
 					}
-					for (int nos = 0; nos < priorCandLength; nos++)
-						hits[r][nos] = 0.0;
 
-					totalUB -= querySet.elementBounds[r];
+					totalUB -= querySet_SM.elementBounds[r];
 
 					double maxSim = 0.0;
 					double UBStep = 1.0 / collection.sets[R][r].length;
@@ -189,6 +191,8 @@ public class Silkmoth extends Algorithm {
 						if (tok == null)
 							continue;
 						if (tok != null) {
+							if (hits[r] == null)
+								hits[r] = new double[candLength];
 							for (int s : tok.elements) {
 								if (hits[r][s] == 0.0) {
 									hits[r][s] = Verification.verifyWithScore(collection.sets[R][r],
@@ -201,6 +205,7 @@ public class Silkmoth extends Algorithm {
 						if (maxSim - elemUB >= 0.00000001)
 							break;
 					}
+					nearestNeighborSim[r] = maxSim;
 
 					totalUB += maxSim;
 
@@ -229,13 +234,14 @@ public class Silkmoth extends Algorithm {
 				if (threshold - score > 0.000000001)
 					continue;
 				totalMatches++;
+//				System.out.println(cm);
 			}
 			
 			if ((System.nanoTime() - joinTime) / 1000000000.0 > timeOut) { // more than 5 hours
 				log.put("percentage", 1.0 * R / collection.sets.length);
 				break;
 			}
-			cands.clear();
+
 		}
 		joinTime = System.nanoTime() - joinTime;
 

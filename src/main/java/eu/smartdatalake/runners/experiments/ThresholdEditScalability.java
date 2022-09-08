@@ -45,7 +45,7 @@ public class ThresholdEditScalability {
 				Algorithm alg = null;
 				switch (model) {
 				case 0: // SM;
-					alg = new Silkmoth(new ThresholdCompetitor("SM", false));
+					alg = new Silkmoth(new ThresholdCompetitor("SM", false, 0));
 					break;
 				case 1: // TJB
 					alg = new TokenJoin(new ThresholdCompetitor("TJB", false, false, 0, true));

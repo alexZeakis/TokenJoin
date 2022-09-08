@@ -13,7 +13,6 @@ import gnu.trove.map.hash.TIntObjectHashMap;
  *
  */
 public class FuzzySetIndex {
-
 	/**
 	 * Inverted list for each token.
 	 */
@@ -39,9 +38,12 @@ public class FuzzySetIndex {
 		}
 
 		idx = new TIntObjectMap[collection.sets.length];
+		
+		TIntObjectHashMap<TIntList> tokElemsList = new TIntObjectHashMap<TIntList>();
 		// populate idx
 		for (int i = 0; i < collection.sets.length; i++) {
-			TIntObjectHashMap<TIntList> tokElemsList = new TIntObjectHashMap<TIntList>();
+//			TIntObjectHashMap<TIntList> tokElemsList = new TIntObjectHashMap<TIntList>();
+			tokElemsList.clear();
 
 			for (int j = 0; j < collection.sets[i].length; j++) {
 				for (int token : collection.sets[i][j]) {
@@ -64,7 +66,6 @@ public class FuzzySetIndex {
 				UB -= tok.value;
 				tok.rest = UB;
 				idx[i].put(token, tok);
-
 				lengthsList[token].add(i);
 			}
 		}
@@ -72,7 +73,9 @@ public class FuzzySetIndex {
 		lengths = new int[collection.numTokens][];
 		for (int i = 0; i < collection.numTokens; i++) {
 			lengths[i] = lengthsList[i].toArray();
+			lengthsList[i].clear();
 		}
+		lengthsList = null;
 	}
 
 }

@@ -1,5 +1,11 @@
 package eu.smartdatalake.simjoin.alg.threshold.jaccard;
 
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.ObjectOutputStream;
+import java.io.ObjectInputStream;
 import java.util.Arrays;
 
 import org.json.simple.JSONObject;
@@ -17,6 +23,8 @@ import gnu.trove.iterator.TIntDoubleIterator;
 import gnu.trove.iterator.TIntObjectIterator;
 import gnu.trove.map.TIntDoubleMap;
 import gnu.trove.map.hash.TIntDoubleHashMap;
+
+import org.openjdk.jol.info.GraphLayout;
 
 /**
  * Class for executing TokenJoin with Jaccard Similarity.
@@ -47,9 +55,11 @@ public class TokenJoin extends Algorithm {
 	 */
 	@SuppressWarnings("unchecked")
 	public void selfJoin(FuzzyIntSetCollection collection, double threshold) {
-
+		
 		collection.clearClusterings();
 		initVerificationTerms();
+		
+//		System.out.println(GraphLayout.parseInstance(collection).totalSize());
 
 //		if (hybrid)
 //			hybridLimit = 1 - (1 - threshold) / 2;
@@ -66,23 +76,26 @@ public class TokenJoin extends Algorithm {
 		indexTime = System.nanoTime() - indexTime;
 		/* EXECUTE THE JOIN ALGORITHM */
 		ProgressBar pb = new ProgressBar(collection.sets.length);
+		
+//		System.out.println(GraphLayout.parseInstance(idx).totalSize());
+		
+		TIntDoubleMap cands = new TIntDoubleHashMap();
 
 		double uniqueToks = 0;
 		for (int R = 0; R < collection.sets.length; R++) {
 
 			// progress bar
 			pb.progress(joinTime);
-
+			
 			/* RECORD INITIALIZATION */
 			startTime = System.nanoTime();
 			TJRecordInfo querySet = new TJRecordInfo(R, collection.sets[R], idx.lengths, idx.idx[R], threshold,
 					globalOrdering, self);
-
 			signatureGenerationTime += System.nanoTime() - startTime;
 
 			/* CANDIDATE GENERATION */
 			startTime = System.nanoTime();
-			TIntDoubleMap cands = new TIntDoubleHashMap();
+			
 			int recLength = collection.sets[R].length;
 			int recMaxLength = (int) Math.floor(recLength / threshold);
 
@@ -114,7 +127,7 @@ public class TokenJoin extends Algorithm {
 			}
 			candGenands += cands.size();
 			phase1Time += System.nanoTime() - startTime;
-
+			
 			/* CANDIDATE REFINEMENT */
 			startTime = System.nanoTime();
 			TIntDoubleIterator it = cands.iterator();
@@ -166,6 +179,8 @@ public class TokenJoin extends Algorithm {
 				log.put("percentage", 1.0 * R / collection.sets.length);
 				break;
 			}
+			
+			cands.clear();
 		}
 
 		uniqueToks /= collection.sets.length;

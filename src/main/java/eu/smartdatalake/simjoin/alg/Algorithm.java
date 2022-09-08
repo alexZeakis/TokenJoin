@@ -27,8 +27,8 @@ public class Algorithm {
 
 	protected JSONObject log;
 
-	protected long timeOut = 18000;
-//	protected long timeOut = 86400;
+//	protected long timeOut = 18000;
+	protected long timeOut = 172800;
 
 	protected long LimitReject = 500000000, noReject = 0;
 

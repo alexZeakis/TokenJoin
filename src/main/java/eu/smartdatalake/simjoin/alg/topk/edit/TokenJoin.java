@@ -89,6 +89,8 @@ public class TokenJoin extends Algorithm {
 		secondHalfTime = System.nanoTime();
 
 		ProgressBar pb = new ProgressBar(collection.sets.length);
+		
+		TIntDoubleMap cands = new TIntDoubleHashMap();
 
 		for (int R = 0; R < collection.sets.length; R++) {
 
@@ -97,8 +99,6 @@ public class TokenJoin extends Algorithm {
 
 			TJRecordInfo querySet = new TJRecordInfo(R, collection.sets[R], collection.qsets[R], idx.lengths,
 					idx.idx[R], threshold, true, true);
-
-			TIntDoubleMap cands = new TIntDoubleHashMap();
 
 			TIntSet localRejected = cRejected[R];
 			if (localRejected == null) {
@@ -252,7 +252,7 @@ public class TokenJoin extends Algorithm {
 				log.put("percentage", 1.0 * R / collection.sets.length);
 				break;
 			}
-
+			cands.clear();
 		}
 		secondHalfTime = System.nanoTime() - secondHalfTime;
 

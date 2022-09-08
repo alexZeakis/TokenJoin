@@ -41,10 +41,15 @@ public class FuzzySetIndex {
 		double q = 3.0;
 
 		idx = new TIntObjectMap[collection.sets.length];
+		
+		TIntObjectHashMap<TIntList> qtokElemsList = new TIntObjectHashMap<TIntList>();
+		TIntObjectHashMap<TIntList> tokElemsList = new TIntObjectHashMap<TIntList>();
 		// populate idx
 		for (int i = 0; i < collection.sets.length; i++) {
-			TIntObjectHashMap<TIntList> qtokElemsList = new TIntObjectHashMap<TIntList>();
-			TIntObjectHashMap<TIntList> tokElemsList = new TIntObjectHashMap<TIntList>();
+//			TIntObjectHashMap<TIntList> qtokElemsList = new TIntObjectHashMap<TIntList>();
+//			TIntObjectHashMap<TIntList> tokElemsList = new TIntObjectHashMap<TIntList>();
+			qtokElemsList.clear();
+			tokElemsList.clear();
 
 			for (int j = 0; j < collection.qsets[i].length; j++) {
 				for (int token : collection.qsets[i][j]) {
@@ -89,9 +94,7 @@ public class FuzzySetIndex {
 
 				UB2 -= tok.value2;
 				tok.rest2 = UB2;
-
 				idx[i].put(token, tok);
-
 				lengthsList[token].add(i);
 			}
 		}
@@ -99,7 +102,9 @@ public class FuzzySetIndex {
 		lengths = new int[collection.numTokens][];
 		for (int i = 0; i < collection.numTokens; i++) {
 			lengths[i] = lengthsList[i].toArray();
+			lengthsList[i].clear();
 		}
+		lengthsList = null;
 
 	}
 

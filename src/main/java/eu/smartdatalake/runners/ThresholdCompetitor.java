@@ -55,10 +55,11 @@ public class ThresholdCompetitor {
 		this.verificationAlg = verificationAlg;
 	}
 
-	public ThresholdCompetitor(String method, boolean globalOrdering) {
+	public ThresholdCompetitor(String method, boolean globalOrdering, int verificationAlg) {
 		this.method = method;
 		this.self = true;
 		this.globalOrdering = globalOrdering;
+		this.verificationAlg = verificationAlg;
 	}
 
 	public ThresholdCompetitor(JSONObject args) {

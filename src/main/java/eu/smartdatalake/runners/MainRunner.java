@@ -19,6 +19,8 @@ import eu.smartdatalake.runners.experiments.TopKJaccardK;
 import eu.smartdatalake.simjoin.util.collection.FuzzyIntSetCollection;
 import eu.smartdatalake.simjoin.util.collection.FuzzySetCollectionReader;
 
+
+
 public class MainRunner {
 
 	@SuppressWarnings("unchecked")
@@ -28,7 +30,7 @@ public class MainRunner {
 			String configFile = "", similarity = "jaccard", type = "threshold", mode = "single", log_dir="", input_dir="";
 			for (int i = 0; i < args.length; i += 2) {
 				if (args[i].equals("--config") || args[i].equals("-c"))
-					configFile = args[i + 1].toLowerCase();
+					configFile = args[i + 1];
 				if (args[i].equals("--similarity") || args[i].equals("-s"))
 					similarity = args[i + 1].toLowerCase();
 				if (args[i].equals("--type") || args[i].equals("-t"))

@@ -68,6 +68,8 @@ public class TokenJoinF extends Algorithm {
 		/* EXECUTE THE JOIN ALGORITHM */
 		ProgressBar pb = new ProgressBar(collection.sets.length);
 
+		TIntDoubleMap cands = new TIntDoubleHashMap();
+		
 		double uniqueToks = 0;
 		for (int R = 0; R < collection.sets.length; R++) {
 
@@ -83,7 +85,6 @@ public class TokenJoinF extends Algorithm {
 
 			/* CANDIDATE GENERATION */
 			startTime = System.nanoTime();
-			TIntDoubleMap cands = new TIntDoubleHashMap();
 			int recLength = collection.sets[R].length;
 			int recMaxLength = (int) Math.floor(recLength / threshold);
 
@@ -183,6 +184,8 @@ public class TokenJoinF extends Algorithm {
 				log.put("percentage", 1.0 * R / collection.sets.length);
 				break;
 			}
+			
+			cands.clear();
 		}
 
 		uniqueToks /= collection.sets.length;

@@ -10,11 +10,14 @@ import gnu.trove.map.TIntObjectMap;
 import gnu.trove.map.hash.TIntObjectHashMap;
 import gnu.trove.set.TIntSet;
 
+import java.io.Serializable;
+
 /**
  * A class that contains all necessary information to perform a Similarity Join.
  *
  */
-public class FuzzyIntSetCollection {
+public class FuzzyIntSetCollection implements Serializable {
+	private static final long serialVersionUID = 1L;
 
 	/**
 	 * 3D-Int Array containing the tokens. First dimension is a record, second an

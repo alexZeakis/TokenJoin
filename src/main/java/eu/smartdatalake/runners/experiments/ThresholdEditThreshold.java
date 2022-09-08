@@ -12,6 +12,7 @@ import eu.smartdatalake.simjoin.alg.threshold.edit.SilkmothF;
 import eu.smartdatalake.simjoin.alg.threshold.edit.TokenJoin;
 import eu.smartdatalake.simjoin.alg.threshold.edit.TokenJoinV;
 import eu.smartdatalake.simjoin.alg.threshold.edit.TokenJoinF;
+import eu.smartdatalake.simjoin.alg.threshold.edit.Hybrid;
 import eu.smartdatalake.simjoin.util.collection.FuzzyIntSetCollection;
 import eu.smartdatalake.simjoin.util.collection.FuzzySetCollectionReader;
 
@@ -45,7 +46,7 @@ public class ThresholdEditThreshold {
 				Algorithm alg = null;
 				switch (model) {
 				case 0: // SM;
-					alg = new Silkmoth(new ThresholdCompetitor("SM", false));
+					alg = new Silkmoth(new ThresholdCompetitor("SM", false, 0));
 					break;
 				case 1: // TJB
 					alg = new TokenJoin(new ThresholdCompetitor("TJB", false, false, 0, true));
@@ -63,13 +64,16 @@ public class ThresholdEditThreshold {
 					alg = new TokenJoinF(new ThresholdCompetitor("TJF", true, true, 2, true));
 					break;
 				case 6: // SMF
-					alg = new SilkmothF(new ThresholdCompetitor("SMF", false));
+					alg = new SilkmothF(new ThresholdCompetitor("SMF", false, 0));
 					break;
 				case 7: // SM;
-					alg = new Silkmoth(new ThresholdCompetitor("SM-G", true));
+					alg = new Silkmoth(new ThresholdCompetitor("SM-G", true, 0));
 					break;	
 				case 8: // TJB
 					alg = new TokenJoin(new ThresholdCompetitor("TJB-L", false, false, 0, false));
+					break;	
+				case 9: // H;
+					alg = new Hybrid(new ThresholdCompetitor("H", true, 0));
 					break;					
 				}
 

@@ -87,6 +87,8 @@ class ThresholdInitializer {
 			
 			int mu = (int) (this.mu * k);
 			
+			TIntDoubleMap cands = new TIntDoubleHashMap();
+			
 			for (int R = 0; R < sampleSize; R++) {
 
 				// progress bar
@@ -95,7 +97,6 @@ class ThresholdInitializer {
 				TJRecordInfo querySet = new TJRecordInfo(R, collection.sets[R], collection.qsets[R], idx.lengths,
 						idx.idx[R], deltaGeneration, true, true);
 
-				TIntDoubleMap cands = new TIntDoubleHashMap();
 				int recLength = collection.sets[R].length;
 				int recMaxLength = (int) Math.floor(recLength / deltaGeneration);
 
@@ -172,6 +173,7 @@ class ThresholdInitializer {
 					if (candsExamined >= mu)
 						break;
 				}
+				cands.clear();
 			}
 
 

@@ -24,12 +24,14 @@ import gnu.trove.set.hash.TIntHashSet;
 public class Silkmoth extends Algorithm {
 	boolean self, globalOrdering;
 	String method;
+	int verificationAlg;
 
 	@SuppressWarnings("unchecked")
 	public Silkmoth(ThresholdCompetitor c) {
 		this.method = c.method;
 		this.self = c.self;
 		this.globalOrdering = c.globalOrdering;
+		this.verificationAlg = c.verificationAlg;
 		log = new JSONObject();
 		JSONObject args = new JSONObject();
 		args.put("self", self);
@@ -56,6 +58,14 @@ public class Silkmoth extends Algorithm {
 		FuzzySetIndex idx = new FuzzySetIndex();
 		idx.buildIndex(collection);
 		indexTime = System.nanoTime() - indexTime;
+		
+		int maxRecLength = collection.sets[collection.sets.length - 1].length;
+		double[] nearestNeighborSim = new double[maxRecLength];
+		double[][] hits = new double[maxRecLength][];
+		for (int nor = 0; nor < maxRecLength; nor++)
+			hits[nor] = new double[maxRecLength];
+		boolean[] matchedElements = new boolean[maxRecLength];
+		TIntSet cands = new TIntHashSet();
 
 		/* EXECUTE THE JOIN ALGORITHM */
 		ProgressBar pb = new ProgressBar(collection.sets.length);
@@ -82,7 +92,6 @@ public class Silkmoth extends Algorithm {
 			int recMaxLength = (int) Math.floor(recLength / threshold);
 
 			/* CANDIDATE GENERATION */
-			TIntSet cands = new TIntHashSet();
 			TIntIterator it = querySet.KTR.iterator();
 			while (it.hasNext()) {
 				int token = it.next();
@@ -105,21 +114,26 @@ public class Silkmoth extends Algorithm {
 			candGenands += cands.size();
 			candGenTime += System.nanoTime() - localStartTime;
 
+			int candLength = maxRecLength;
+			
 			TIntIterator it2 = cands.iterator();
 			while (it2.hasNext()) {
 				int S = it2.next();
-				int candLength = collection.sets[S].length;
+				
 				long localStartTime2 = System.nanoTime();
-				double[][] hits = new double[recLength][];
-				double[] nearestNeighborSim = new double[recLength];
-
+				for (int nor = 0; nor < recLength; nor++) {
+					nearestNeighborSim[nor] = 0.0;
+				}
+				int priorCandLength = candLength;
+				candLength = collection.sets[S].length;
 				initTime += System.nanoTime() - localStartTime2;
 
 				localStartTime2 = System.nanoTime();
 				/* CHECK FILTER */
 				boolean pass = false;
 				for (int r = 0; r < querySet.unflattenedSignature.length; r++) {
-					hits[r] = new double[candLength];
+					for (int nos = 0; nos < priorCandLength; nos++)
+						hits[r][nos] = 0.0;
 					double maxNN = 0.0;
 
 					for (int t = 0; t < querySet.unflattenedSignature[r].size(); t++) {
@@ -136,11 +150,7 @@ public class Silkmoth extends Algorithm {
 							maxNN = Math.max(hits[r][s], maxNN);
 						}
 					}
-
-					if (maxNN > 0) { // element had signature tokens
-						nearestNeighborSim[r] = maxNN;
-					}
-
+					nearestNeighborSim[r] = maxNN;
 				}
 
 				CFTime += System.nanoTime() - localStartTime2;
@@ -152,23 +162,24 @@ public class Silkmoth extends Algorithm {
 				/* NEAREST NEIGHBOR FILTER */
 				localStartTime2 = System.nanoTime();
 				double persThreshold = threshold / (1.0 + threshold) * (recLength + candLength);
-				TIntSet matchedElements;
 
 				double totalUB = 0;
-				matchedElements = new TIntHashSet();
 				for (int r = 0; r < collection.sets[R].length; r++) {
 					if (nearestNeighborSim[r] > querySet.elementBounds[r]) {
-						matchedElements.add(r);
+						matchedElements[r] = true;
 						totalUB += nearestNeighborSim[r];
 					} else {
+						matchedElements[r] = false;
 						totalUB += querySet.elementBounds[r];
 					}
 				}
 
 				for (int r = 0; r < recLength; r++) {
-					if (matchedElements.contains(r)) {
+					if (matchedElements[r]) {
 						continue;
 					}
+					for (int nos = 0; nos < priorCandLength; nos++)
+						hits[r][nos] = 0.0;
 
 					totalUB -= querySet.elementBounds[r];
 
@@ -186,8 +197,6 @@ public class Silkmoth extends Algorithm {
 						if (tok == null)
 							continue;
 						if (tok != null) {
-							if (hits[r] == null)
-								hits[r] = new double[candLength];
 							for (int s : tok.elements) {
 								if (hits[r][s] == 0.0) {
 									hits[r][s] = Verification.verifyWithScore(collection.originalStrings[R][r],
@@ -221,7 +230,7 @@ public class Silkmoth extends Algorithm {
 				localStartTime2 = System.nanoTime();
 				GraphVerifier eval4 = new GraphVerifier();
 				score = eval4.verifyGraph(collection.originalStrings[R], collection.originalStrings[S], hits,
-						collection.getClustering(R), collection.getClustering(S), persThreshold, 0);
+						collection.getClustering(R), collection.getClustering(S), persThreshold, verificationAlg);
 				verificationTime += System.nanoTime() - localStartTime2;
 
 				if (threshold - score > 0.000000001)
@@ -233,6 +242,8 @@ public class Silkmoth extends Algorithm {
 				log.put("percentage", 1.0 * R / collection.sets.length);
 				break;
 			}
+			
+			cands.clear();
 		}
 		joinTime = System.nanoTime() - joinTime;
 
