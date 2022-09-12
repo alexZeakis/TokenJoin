@@ -15,6 +15,7 @@ import org.json.simple.JSONObject;
 import eu.smartdatalake.runners.ThresholdCompetitor;
 import eu.smartdatalake.simjoin.alg.Algorithm;
 import eu.smartdatalake.simjoin.alg.threshold.jaccard.Silkmoth;
+import eu.smartdatalake.simjoin.alg.threshold.jaccard.Silkmoth5;
 import eu.smartdatalake.simjoin.alg.threshold.jaccard.SilkmothF;
 import eu.smartdatalake.simjoin.alg.threshold.jaccard.TokenJoin;
 import eu.smartdatalake.simjoin.alg.threshold.jaccard.TokenJoinV;
@@ -90,7 +91,7 @@ public class ThresholdJaccardThreshold {
 				Algorithm alg = null;
 				switch (model) {
 				case 0: // SM;
-					alg = new Silkmoth(new ThresholdCompetitor("SM", false, 0));
+					alg = new Silkmoth5(new ThresholdCompetitor("SM", false, 0));
 					break;
 				case 1: // TJB
 					alg = new TokenJoin(new ThresholdCompetitor("TJB", false, false, 0, true));

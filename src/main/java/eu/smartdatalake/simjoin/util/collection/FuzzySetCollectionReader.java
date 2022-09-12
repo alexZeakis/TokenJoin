@@ -34,7 +34,7 @@ import gnu.trove.set.hash.TIntHashSet;
 public class FuzzySetCollectionReader {
 	protected static final Logger logger = LogManager.getLogger(FuzzySetCollectionReader.class);
 	protected static long over400 = 0;
-	protected static final int upperLimit = 10;
+	protected static final int upperLimit = 400;
 	protected static final int lowerLimit = 1;
 
 	/**

@@ -83,9 +83,9 @@ public class TokenJoin extends Algorithm {
 
 		double uniqueToks = 0;
 		for (int R = 0; R < collection.sets.length; R++) {
-
+			
 			// progress bar
-			pb.progress(joinTime);
+			pb.progress(joinTime, totalMatches);
 			
 			/* RECORD INITIALIZATION */
 			startTime = System.nanoTime();

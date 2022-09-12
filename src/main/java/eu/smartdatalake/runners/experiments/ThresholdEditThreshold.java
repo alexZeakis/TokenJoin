@@ -8,6 +8,7 @@ import org.json.simple.JSONObject;
 import eu.smartdatalake.runners.ThresholdCompetitor;
 import eu.smartdatalake.simjoin.alg.Algorithm;
 import eu.smartdatalake.simjoin.alg.threshold.edit.Silkmoth;
+import eu.smartdatalake.simjoin.alg.threshold.edit.Silkmoth2;
 import eu.smartdatalake.simjoin.alg.threshold.edit.SilkmothF;
 import eu.smartdatalake.simjoin.alg.threshold.edit.TokenJoin;
 import eu.smartdatalake.simjoin.alg.threshold.edit.TokenJoinV;
@@ -46,7 +47,7 @@ public class ThresholdEditThreshold {
 				Algorithm alg = null;
 				switch (model) {
 				case 0: // SM;
-					alg = new Silkmoth(new ThresholdCompetitor("SM", false, 0));
+					alg = new Silkmoth2(new ThresholdCompetitor("SM", false, 0));
 					break;
 				case 1: // TJB
 					alg = new TokenJoin(new ThresholdCompetitor("TJB", false, false, 0, true));

@@ -39,6 +39,23 @@ public class ProgressBar {
 		}
 	}
 	
+	public void progress(long time, long matches) {
+		if (len >= 100) {
+			count++;
+			if (len >= totalSteps) {
+				if (count % step == 0) {
+					long now = System.nanoTime();
+					double elapsed = (now - time) / 1000000000.0;
+					double eta = (elapsed * step * totalSteps) / count - elapsed;
+					String msg = String.format("%d%% \tElapsed: %dm %ds  \t\tETA: %dm %ds\tMatches: %d\r",
+							(count / step * 100) / totalSteps, (int) (elapsed / 60.0), (int) (elapsed % 60.0),
+							(int) (eta / 60.0), (int) (eta % 60.0), matches);
+					System.out.print(msg);
+				}
+			}
+		}
+	}	
+	
 	public void progressK(long time, double threshold) {
 		if (len >= 100) {
 			count++;
