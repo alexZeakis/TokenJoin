@@ -44,7 +44,7 @@ public class SMRecordInfo {
 			it.advance();
 			if (it.value().value == 0.0) // not a qchunk
 				continue;
-			double score = (globalOrdering) ? it.key(): lengths[it.key()].length / it.value().value;
+			double score = (globalOrdering) ? it.key() : lengths[it.key()].length / it.value().value;
 			tempTokens.add(new RecordTokenScore(it.key(), score, it.value().value));
 		}
 		tokens = new RecordTokenScore[tempTokens.size()];
@@ -97,10 +97,13 @@ public class SMRecordInfo {
 		TIntObjectIterator<IndexTokenScore2> it = values.iterator();
 		while (it.hasNext()) {
 			it.advance();
-			if (it.value().value == 0.0) // not a qchunk
+			double value = it.value().value;
+			if (value == 0.0) // not a qchunk
 				continue;
-			double score = (globalOrdering) ? it.key(): costs[it.key()] / it.value().value;
-			tempTokens.add(new RecordTokenScore(it.key(), score, it.value().value));
+			double cost = costs[it.key()];
+//			double cost = idx.recordIndex[it.key()].length;
+			double score = (globalOrdering) ? it.key() : cost / value;
+			tempTokens.add(new RecordTokenScore(it.key(), score, value));
 		}
 		tokens = new RecordTokenScore[tempTokens.size()];
 		for (int i = 0; i < tempTokens.size(); i++) {

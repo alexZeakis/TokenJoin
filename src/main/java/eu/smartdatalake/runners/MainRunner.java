@@ -1,197 +1,172 @@
 package eu.smartdatalake.runners;
 
-import java.io.FileReader;
 import java.io.IOException;
 import java.util.Arrays;
 
+import java.io.FileInputStream;
+import java.io.ObjectInputStream;
+
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.core.LoggerContext;
-import org.json.simple.JSONObject;
-import org.json.simple.parser.JSONParser;
-import org.json.simple.parser.ParseException;
 
-import eu.smartdatalake.runners.experiments.ThresholdEditScalability;
-import eu.smartdatalake.runners.experiments.ThresholdEditThreshold;
-import eu.smartdatalake.runners.experiments.TopKEditK;
-import eu.smartdatalake.runners.experiments.ThresholdJaccardScalability;
-import eu.smartdatalake.runners.experiments.ThresholdJaccardThreshold;
-import eu.smartdatalake.runners.experiments.TopKJaccardK;
+import eu.smartdatalake.simjoin.alg.Algorithm;
 import eu.smartdatalake.simjoin.util.collection.FuzzyIntSetCollection;
-import eu.smartdatalake.simjoin.util.collection.FuzzySetCollectionReader;
-
-
 
 public class MainRunner {
 
-	@SuppressWarnings("unchecked")
 	public static void main(String[] args) {
 		try {
 
-			String configFile = "", similarity = "jaccard", type = "threshold", mode = "single", log_dir="", input_dir="";
+			System.out.println(Arrays.toString(args));
+			
+			String similarity = "jaccard", logFile = "", inputFile = "", model = "TJ";
+			double delta = 0.9;
+			int k = 500;
 			for (int i = 0; i < args.length; i += 2) {
-				if (args[i].equals("--config") || args[i].equals("-c"))
-					configFile = args[i + 1];
 				if (args[i].equals("--similarity") || args[i].equals("-s"))
 					similarity = args[i + 1].toLowerCase();
-				if (args[i].equals("--type") || args[i].equals("-t"))
-					type = args[i + 1].toLowerCase();
-				if (args[i].equals("--mode") || args[i].equals("-m"))
-					mode = args[i + 1].toLowerCase();
 				if (args[i].equals("--log") || args[i].equals("-l"))
-					log_dir = args[i + 1];
+					logFile = args[i + 1];
 				if (args[i].equals("--input") || args[i].equals("-i"))
-					input_dir = args[i + 1];				
+					inputFile = args[i + 1];
+				if (args[i].equals("--model") || args[i].equals("-m"))
+					model = args[i + 1];
+				if (args[i].equals("--delta") || args[i].equals("-d"))
+					delta = Double.parseDouble(args[i + 1]);
+				if (args[i].equals("--k") || args[i].equals("-k"))
+					k = Integer.parseInt(args[i + 1]);
 			}
 
-			if (configFile.equals(""))
-				throw new IllegalArgumentException("A config file must be passed!");
+			if (logFile.equals(""))
+				throw new IllegalArgumentException("A log directory must be passed!");
 
-			if (log_dir.equals(""))
-				throw new IllegalArgumentException("A log directory must be passed!");			
+			if (inputFile.equals(""))
+				throw new IllegalArgumentException("An input file must be passed!");
 
-			if (input_dir.equals(""))
-				throw new IllegalArgumentException("An input directory must be passed!");				
-			
 			String[] similarities = { "jaccard", "edit" };
 			if (!Arrays.asList(similarities).contains(similarity))
 				throw new IllegalArgumentException(
 						"Invalid similarity. Valid values are: " + Arrays.toString(similarities));
 
-			String[] types = { "threshold", "topk", "threshold_scalability", "threshold_verification",
-					"threshold_threshold", "threshold_filtering" };
-			if (type != null && !Arrays.asList(types).contains(type))
-				throw new IllegalArgumentException("Invalid type. Valid values are: " + Arrays.toString(types));
+			String[] models = { "TJ", "TJP", "TJPJ", "SM", "TJK", "SMK", "FJK" };
+			if (!Arrays.asList(model).contains(model))
+				throw new IllegalArgumentException("Invalid model. Valid values are: " + Arrays.toString(models));
 
-			String[] modes = { "experiment", "single" };
-			if (!Arrays.asList(modes).contains(mode))
-				throw new IllegalArgumentException("Invalid mode. Valid values are: " + Arrays.toString(modes));
-
-			System.out.println(configFile + " " + similarity + " " + type + " " + mode + ".");
-
-			/* READ PARAMETERS */
-			JSONParser jsonParser = new JSONParser();
-			JSONObject config = (JSONObject) jsonParser.parse(new FileReader(configFile));
-
-			JSONObject execConfig = (JSONObject) config.get("execute");
-			execConfig = (JSONObject) execConfig.get(mode);
-			execConfig = (JSONObject) execConfig.get(type);
-
-			JSONObject readConfig = (JSONObject) config.get("read");
-			readConfig.put("input_file", input_dir + (String) readConfig.get("input_file"));
-
-			String name = String.valueOf(config.get("name"));
-
-			if (mode.equals("experiment")) {
-				String logFile = String.format("%s%s/%s/%s.log", log_dir, mode, type, name);
-				System.setProperty("logFilename", logFile);
-				LoggerContext ctx = (LoggerContext) LogManager.getContext(false);
-				ctx.reconfigure();
-
-//				execConfig = (JSONObject) execConfig.get(type);
-
-				if (similarity.equals("jaccard")) {
-					if (type.equals("threshold_threshold") || type.equals("threshold_verification") || type.equals("threshold_filtering")) {
-						ThresholdJaccardThreshold.run(readConfig, execConfig);
-					} else if (type.equals("threshold_scalability")) {
-						ThresholdJaccardScalability.run(readConfig, execConfig);
-					} else if (type.equals("topk")) {
-						TopKJaccardK.run(readConfig, execConfig);
-					}
-				} else if (similarity.equals("edit")) {
-					if (type.equals("threshold_threshold") || type.equals("threshold_verification") || type.equals("threshold_filtering")) {
-						ThresholdEditThreshold.run(readConfig, execConfig);
-					} else if (type.equals("threshold_scalability")) {
-						ThresholdEditScalability.run(readConfig, execConfig);
-					} else if (type.equals("topk")) {
-						TopKEditK.run(readConfig, execConfig);
-					}
-				}
-			} else if (mode.equals("single")) {
-				String logFile = String.format("%s%s/%s/%s/%s.log", log_dir, mode, type, similarity, name);
-				System.setProperty("logFilename", logFile);
-				LoggerContext ctx = (LoggerContext) LogManager.getContext(false);
-				ctx.reconfigure();
-
-				execConfig = (JSONObject) execConfig.get(similarity);
-
-				if (type.equals("threshold")) {
-					JSONObject thresholdArgs = (JSONObject) execConfig.get("arguments");
-					ThresholdCompetitor c = new ThresholdCompetitor(thresholdArgs);
-
-					long duration = System.nanoTime();
-					FuzzyIntSetCollection collection = new FuzzySetCollectionReader().prepareCollection(readConfig,
-							execConfig, similarity.equals("edit"), false);
-					duration = System.nanoTime() - duration;
-					System.out.println("Preparation time: " + duration / 1000000000.0 + " sec.");
-
-					String algorithm = String.valueOf(execConfig.get("algorithm"));
-					double threshold = Double.parseDouble(String.valueOf(execConfig.get("threshold")));
-
-					if (similarity.equals("jaccard")) {
-						if (algorithm.equals("tokenjoin")) {
-							new eu.smartdatalake.simjoin.alg.threshold.jaccard.TokenJoin(c).selfJoin(collection,
-									threshold);
-						} else if (algorithm.equals("silkmoth")) {
-							new eu.smartdatalake.simjoin.alg.threshold.jaccard.Silkmoth(c).selfJoin(collection,
-									threshold);
-						}
-
-					} else if (similarity.equals("edit")) {
-						if (algorithm.equals("tokenjoin")) {
-							new eu.smartdatalake.simjoin.alg.threshold.edit.TokenJoin(c).selfJoin(collection,
-									threshold);
-						} else if (algorithm.equals("silkmoth")) {
-							new eu.smartdatalake.simjoin.alg.threshold.edit.Silkmoth(c).selfJoin(collection, threshold);
-						}
-					}
-
-				} else if (type.equals("topk")) {
-					JSONObject topkArgs = (JSONObject) execConfig.get("arguments");
-					TopkCompetitor c = new TopkCompetitor(topkArgs);
-
-					long duration = System.nanoTime();
-					FuzzyIntSetCollection collection = new FuzzySetCollectionReader().prepareCollection(readConfig,
-							execConfig, similarity.equals("edit"), true);
-					duration = System.nanoTime() - duration;
-					System.out.println("Preparation time: " + duration / 1000000000.0 + " sec.");
-
-					String algorithm = String.valueOf(execConfig.get("algorithm"));
-					int k = Integer.parseInt(String.valueOf(execConfig.get("k")));
-
-					if (similarity.equals("jaccard")) {
-						if (algorithm.equals("tokenjoin")) {
-							new eu.smartdatalake.simjoin.alg.topk.jaccard.TokenJoin(c).selfJoin(collection, k);
-						} else if (algorithm.equals("silkmoth")) {
-							new eu.smartdatalake.simjoin.alg.topk.jaccard.Silkmoth(c).selfJoin(collection, k);
-						} else if (algorithm.equals("topkjoin")) {
-							new eu.smartdatalake.simjoin.alg.topk.jaccard.TopkJoin(c).selfJoin(collection, k);
-						} else if (algorithm.equals("best")) {
-							double threshold = Double.parseDouble(String.valueOf(execConfig.get("threshold")));
-							new eu.smartdatalake.simjoin.alg.topk.jaccard.Fixed().selfJoinFixed(collection, k,
-									threshold);
-						}
-					} else if (similarity.equals("edit")) {
-						if (algorithm.equals("tokenjoin")) {
-							new eu.smartdatalake.simjoin.alg.topk.edit.TokenJoin(c).selfJoin(collection, k);
-						} else if (algorithm.equals("silkmoth")) {
-							new eu.smartdatalake.simjoin.alg.topk.edit.Silkmoth(c).selfJoin(collection, k);
-						} else if (algorithm.equals("topkjoin")) {
-							new eu.smartdatalake.simjoin.alg.topk.edit.TopkJoin(c).selfJoin(collection, k);
-						} else if (algorithm.equals("best")) {
-							double threshold = Double.parseDouble(String.valueOf(execConfig.get("threshold")));
-							new eu.smartdatalake.simjoin.alg.topk.edit.Fixed().selfJoinFixed(collection, k, threshold);
-						}
-					}
-
-				} else {
-					throw new IllegalArgumentException("Wrong sinle type.");
-				}
-
+			long duration = System.nanoTime();
+			FuzzyIntSetCollection collection = null;
+			try {
+				FileInputStream fileInputStream = new FileInputStream(inputFile);
+				ObjectInputStream objectInputStream = new ObjectInputStream(fileInputStream);
+				collection = (FuzzyIntSetCollection) objectInputStream.readObject();
+				objectInputStream.close();
+				fileInputStream.close();
+			} catch (IOException | ClassNotFoundException e) {
+				e.printStackTrace();
 			}
-		} catch (ParseException |
+			duration = System.nanoTime() - duration;
+			System.out.println("Preparation time: " + duration / 1000000000.0 + " sec.");
 
-				IOException e) {
-			e.printStackTrace();
+			System.setProperty("logFilename", logFile);
+			LoggerContext ctx = (LoggerContext) LogManager.getContext(false);
+			ctx.reconfigure();
+
+			if (similarity.equals("jaccard")) {
+				Algorithm alg = null;
+				switch (model) {
+				case "SM": // SM;
+					alg = new eu.smartdatalake.simjoin.alg.threshold.jaccard.Silkmoth(
+							new ThresholdCompetitor("SM", false, 0));
+					alg.selfJoin(collection, delta);
+					break;
+				case "TJ": // TJB
+					alg = new eu.smartdatalake.simjoin.alg.threshold.jaccard.TokenJoin(
+							new ThresholdCompetitor("TJB", false, false, 0, true));
+					alg.selfJoin(collection, delta);
+					break;
+				case "TJP": // TJP
+					alg = new eu.smartdatalake.simjoin.alg.threshold.jaccard.TokenJoin(
+							new ThresholdCompetitor("TJP", true, false, 0, true));
+					alg.selfJoin(collection, delta);
+					break;
+				case "TJPJ": // TJPJ
+					alg = new eu.smartdatalake.simjoin.alg.threshold.jaccard.TokenJoin(
+							new ThresholdCompetitor("TJPJ", true, true, 0, true));
+					alg.selfJoin(collection, delta);
+					break;
+				case "TJV": // TJV
+					alg = new eu.smartdatalake.simjoin.alg.threshold.jaccard.TokenJoinV(
+							new ThresholdCompetitor("TJPJ - VUL", true, true, 2, true));
+					alg.selfJoin(collection, delta);
+					break;
+				case "TJK": // TJV
+					alg = new eu.smartdatalake.simjoin.alg.topk.jaccard.TokenJoin(
+							new TopkCompetitor("TJK", 2, 0.90, 0.01, 2, 0.4));
+					alg.selfJoin(collection, k);
+					break;
+				case "OT":
+					new eu.smartdatalake.simjoin.alg.topk.jaccard.Fixed().selfJoinFixed(collection, k, delta);
+					break;
+				case "SMK":
+					alg = new eu.smartdatalake.simjoin.alg.topk.jaccard.Silkmoth(
+							new TopkCompetitor("SMK", 2, 0.90, 0.01, 2, 0.4));
+					alg.selfJoin(collection, k);
+					break;
+				case "FJK":
+					alg = new eu.smartdatalake.simjoin.alg.topk.jaccard.TopkJoin(
+							new TopkCompetitor("FJK", 2, 0.90, 0.01, 2, 0.4));
+					alg.selfJoin(collection, k);
+					break;
+				}
+			} else if (similarity.equals("edit")) {
+				Algorithm alg = null;
+				switch (model) {
+				case "SM": // SM;
+					alg = new eu.smartdatalake.simjoin.alg.threshold.edit.Silkmoth(
+							new ThresholdCompetitor("SM", false, 0));
+					alg.selfJoin(collection, delta);
+					break;
+				case "TJ": // TJB
+					alg = new eu.smartdatalake.simjoin.alg.threshold.edit.TokenJoin(
+							new ThresholdCompetitor("TJB", false, false, 0, true));
+					alg.selfJoin(collection, delta);
+					break;
+				case "TJP": // TJP
+					alg = new eu.smartdatalake.simjoin.alg.threshold.edit.TokenJoin(
+							new ThresholdCompetitor("TJP", true, false, 0, true));
+					alg.selfJoin(collection, delta);
+					break;
+				case "TJPJ": // TJPJ
+					alg = new eu.smartdatalake.simjoin.alg.threshold.edit.TokenJoin(
+							new ThresholdCompetitor("TJPJ", true, true, 0, true));
+					alg.selfJoin(collection, delta);
+					break;
+				case "TJV": // TJV
+					alg = new eu.smartdatalake.simjoin.alg.threshold.edit.TokenJoinV(
+							new ThresholdCompetitor("TJPJ - VUL", true, true, 2, true));
+					alg.selfJoin(collection, delta);
+					break;
+				case "TJK": // TJV
+					alg = new eu.smartdatalake.simjoin.alg.topk.edit.TokenJoin(
+							new TopkCompetitor("TJK", 2, 0.90, 0.01, 2, 0.4));
+					alg.selfJoin(collection, k);
+					break;
+				case "OT":
+					new eu.smartdatalake.simjoin.alg.topk.edit.Fixed().selfJoinFixed(collection, k, delta);
+					break;
+				case "SMK":
+					alg = new eu.smartdatalake.simjoin.alg.topk.edit.Silkmoth(
+							new TopkCompetitor("SMK", 2, 0.90, 0.01, 2, 0.4));
+					alg.selfJoin(collection, k);
+					break;
+				case "FJK":
+					alg = new eu.smartdatalake.simjoin.alg.topk.edit.TopkJoin(
+							new TopkCompetitor("FJK", 2, 0.90, 0.01, 2, 0.4));
+					alg.selfJoin(collection, k);
+					break;
+				}
+			}
+		} finally {
+
 		}
 	}
 }
