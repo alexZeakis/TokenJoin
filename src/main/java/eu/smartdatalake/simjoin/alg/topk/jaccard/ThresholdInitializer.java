@@ -19,9 +19,9 @@ import eu.smartdatalake.simjoin.util.index.jaccard.FuzzySetIndex;
 import eu.smartdatalake.simjoin.util.index.jaccard.IndexTokenScore;
 import eu.smartdatalake.simjoin.util.record.RecordTokenScore;
 import eu.smartdatalake.simjoin.util.record.jaccard.TJRecordInfo;
-import gnu.trove.iterator.TIntDoubleIterator;
-import gnu.trove.map.TIntDoubleMap;
-import gnu.trove.map.hash.TIntDoubleHashMap;
+import gnu.trove.iterator.TIntIterator;
+import gnu.trove.list.TIntList;
+import gnu.trove.list.array.TIntArrayList;
 import gnu.trove.set.TIntSet;
 import gnu.trove.set.hash.TIntHashSet;
 
@@ -84,26 +84,28 @@ class ThresholdInitializer {
 
 			int sampleSize = (int) (collection.sets.length * samplePercentage);
 			ProgressBar pb = new ProgressBar(sampleSize);
-			
+
 			int mu = (int) (this.mu * k);
-			
-			TIntDoubleMap cands = new TIntDoubleHashMap();
-			
+
+			TIntList cands = new TIntArrayList();
+			double[] candsScores = new double[collection.sets.length];
+
 			for (int R = 0; R < sampleSize; R++) {
 
 				// progress bar
 				pb.progress(joinTime);
 
-				TJRecordInfo querySet = new TJRecordInfo(R, collection.sets[R], idx.lengths, idx.idx[R],
-						deltaGeneration, true, true);
+				TJRecordInfo querySet = new TJRecordInfo(R, collection.sets[R], idx, deltaGeneration, true, true);
 
 				int recLength = collection.sets[R].length;
 				int recMaxLength = (int) Math.floor(recLength / deltaGeneration);
 
-				TIntSet localRejected = new TIntHashSet();
 				TIntSet duplicates = collection.hashGroups.get(collection.hashCodes[R]);
 				if (duplicates != null) {
-					localRejected.addAll(duplicates);
+					TIntIterator it = duplicates.iterator();
+					while (it.hasNext()) {
+						candsScores[it.next()] = -1;
+					}
 				}
 
 				int posTok = 0;
@@ -117,7 +119,7 @@ class ThresholdInitializer {
 					int[] tempCands = idx.lengths[token];
 					int tempLen = tempCands.length;
 
-					if (querySet.theta - querySet.sumStopped > 0.0000001) 
+					if (querySet.theta - querySet.sumStopped > 0.0000001)
 						break;
 
 					querySet.sumStopped -= zetUtilScore;
@@ -129,21 +131,24 @@ class ThresholdInitializer {
 						if (collection.sets[S].length > recMaxLength) {
 							break;
 						}
-						if (localRejected.contains(S))
+						if (candsScores[S] == -1) // duplicate
 							continue;
 
-						cands.adjustOrPutValue(S, zetUtilScore, zetUtilScore);
+						if (candsScores[S] == 0)
+							cands.add(S);
+						candsScores[S] += zetUtilScore;
 					}
 				}
 
-				TIntDoubleIterator cit = cands.iterator();
+				TIntIterator cit = cands.iterator();
 				PriorityQueue<CandPair> Q = new PriorityQueue<CandPair>(Collections.reverseOrder());
 				while (cit.hasNext()) {
-					cit.advance();
-					int S = cit.key();
-					double total = cit.value() + querySet.sumStopped;
+					int S = cit.next();
+					double utilGathered = candsScores[S];
+					candsScores[S] = 0;
+					double total = utilGathered + querySet.sumStopped;
 					double score = total / (collection.sets[R].length + collection.sets[S].length - total);
-					Q.add(new CandPair(R, S, score, cit.value()));
+					Q.add(new CandPair(R, S, score, utilGathered));
 				}
 
 				int candsExamined = 0;
@@ -176,11 +181,10 @@ class ThresholdInitializer {
 				cands.clear();
 			}
 
-
 			int verified = 0;
 			while (!GQ3.isEmpty() && GQ3.peekFirst().score > threshold) {
 				CandPair p = GQ3.pollFirst();
-			
+
 				int R = p.left;
 				int S = p.right;
 

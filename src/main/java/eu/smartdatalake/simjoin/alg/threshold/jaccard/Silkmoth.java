@@ -58,8 +58,7 @@ public class Silkmoth extends Algorithm {
 		joinTime = System.nanoTime();
 
 		indexTime = System.nanoTime();
-		FuzzySetIndex2 idx = new FuzzySetIndex2();
-		idx.buildIndex(collection);
+		FuzzySetIndex2 idx = new FuzzySetIndex2(collection);
 		indexTime = System.nanoTime() - indexTime;
 
 		int maxRecLength = collection.sets[collection.sets.length - 1].length;
@@ -76,13 +75,13 @@ public class Silkmoth extends Algorithm {
 		ProgressBar pb = new ProgressBar(collection.sets.length);
 
 		for (int R = 0; R < collection.sets.length; R++) {
+
 			// progress bar
 			pb.progress(joinTime, totalMatches);
 
 			/* SIGNATURE GENERATION */
 			long localStartTime = System.nanoTime();
-//			SMRecordInfo querySet = new SMRecordInfo(R, collection.sets[R], idx.lengths, idx.idx[R], globalOrdering);
-			SMRecordInfo querySet = new SMRecordInfo(R, collection.sets[R], idx.costs, idx.idx[R], globalOrdering);
+			SMRecordInfo querySet = new SMRecordInfo(R, collection.sets[R], idx, globalOrdering);
 			querySet.computeUnflattenedSignature(idx, threshold, self, collection.sets[R]);
 			signatureGenerationTime += System.nanoTime() - localStartTime;
 
@@ -133,7 +132,7 @@ public class Silkmoth extends Algorithm {
 			TIntIterator it2 = cands.iterator();
 			while (it2.hasNext()) {
 				int S = it2.next();
-				
+
 				long localStartTime2 = System.nanoTime();
 				int candLength = collection.sets[S].length;
 				initTime += System.nanoTime() - localStartTime2;
@@ -170,10 +169,10 @@ public class Silkmoth extends Algorithm {
 					if (matchedElements[r]) {
 						continue;
 					}
-					
+
 					for (int nos = 0; nos < candLength; nos++)
 						hits[r][nos] = 0.0;
-					
+
 					totalUB -= querySet.elementBounds[r];
 
 					double maxSim = 0.0;
@@ -213,7 +212,7 @@ public class Silkmoth extends Algorithm {
 				}
 
 				NNFCands++;
-				
+
 				verifiable++;
 				/* VERIFICATION */
 				localStartTime2 = System.nanoTime();

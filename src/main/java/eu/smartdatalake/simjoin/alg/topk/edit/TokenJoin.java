@@ -16,12 +16,11 @@ import eu.smartdatalake.simjoin.util.index.edit.FuzzySetIndex;
 import eu.smartdatalake.simjoin.util.index.edit.IndexTokenScore;
 import eu.smartdatalake.simjoin.util.record.RecordTokenScore;
 import eu.smartdatalake.simjoin.util.record.edit.TJRecordInfo;
-import gnu.trove.iterator.TIntDoubleIterator;
+import gnu.trove.iterator.TIntIterator;
 import gnu.trove.iterator.TIntObjectIterator;
-import gnu.trove.map.TIntDoubleMap;
-import gnu.trove.map.hash.TIntDoubleHashMap;
+import gnu.trove.list.TIntList;
+import gnu.trove.list.array.TIntArrayList;
 import gnu.trove.set.TIntSet;
-import gnu.trove.set.hash.TIntHashSet;
 
 /**
  * TokenJoin method for TopK.
@@ -66,8 +65,7 @@ public class TokenJoin extends Algorithm {
 
 		/* INDEX BUILDING */
 		indexTime = System.nanoTime();
-		FuzzySetIndex idx = new FuzzySetIndex();
-		idx.buildIndex(collection);
+		FuzzySetIndex idx = new FuzzySetIndex(collection);
 		indexTime = System.nanoTime() - indexTime;
 
 		/* EXECUTE THE JOIN ALGORITHM */
@@ -89,23 +87,30 @@ public class TokenJoin extends Algorithm {
 		secondHalfTime = System.nanoTime();
 
 		ProgressBar pb = new ProgressBar(collection.sets.length);
-		
-		TIntDoubleMap cands = new TIntDoubleHashMap();
+
+		TIntList cands = new TIntArrayList();
+		double[] candsScores = new double[collection.sets.length];
 
 		for (int R = 0; R < collection.sets.length; R++) {
 
 			// progress bar
 			pb.progressK(joinTime, threshold);
 
-			TJRecordInfo querySet = new TJRecordInfo(R, collection.sets[R], collection.qsets[R], idx.lengths,
-					idx.idx[R], threshold, true, true);
+			TJRecordInfo querySet = new TJRecordInfo(R, collection.sets[R], collection.qsets[R], idx, threshold, true,
+					true);
 
-			TIntSet localRejected = cRejected[R];
-			if (localRejected == null) {
-				localRejected = new TIntHashSet();
-				TIntSet duplicates = collection.hashGroups.get(collection.hashCodes[R]);
-				if (duplicates != null) {
-					localRejected.addAll(duplicates);
+			TIntSet duplicates = collection.hashGroups.get(collection.hashCodes[R]);
+			if (duplicates != null) {
+				TIntIterator it = duplicates.iterator();
+				while (it.hasNext()) {
+					candsScores[it.next()] = -1;
+				}
+			}
+
+			if (cRejected[R] != null) {
+				TIntIterator it = cRejected[R].iterator();
+				while (it.hasNext()) {
+					candsScores[it.next()] = -1;
 				}
 			}
 
@@ -137,27 +142,31 @@ public class TokenJoin extends Algorithm {
 					if (collection.sets[S].length > recMaxLength) {
 						break;
 					}
-					if (localRejected.contains(S))
+					if (candsScores[S] == -1) // duplicate or verified
 						continue;
 
-					cands.adjustOrPutValue(S, zetUtilScore, zetUtilScore);
+					if (candsScores[S] == 0)
+						cands.add(S);
+					candsScores[S] += zetUtilScore;
 				}
 			}
 
 			/* CANDIDATE PRIORITIZATION */
 			PriorityQueue<Cand> Q = new PriorityQueue<Cand>();
-			TIntDoubleIterator cit = cands.iterator();
+			TIntIterator cit = cands.iterator();
 			while (cit.hasNext()) {
-				cit.advance();
+				int S = cit.next();
+				double utilGathered = candsScores[S];
+				candsScores[S] = 0;
 
-				double total = querySet.sumStopped + cit.value();
-				double score = total / (collection.sets[R].length + collection.sets[cit.key()].length - total);
+				double total = querySet.sumStopped + utilGathered;
+				double score = total / (collection.sets[R].length + collection.sets[S].length - total);
 
 				if (threshold - score > .0000001) { // Zombie Kill to avoid inserting in Q
 					continue;
 				}
 
-				Q.add(new Cand(cit.key(), cit.value(), score));
+				Q.add(new Cand(S, utilGathered, score));
 			}
 
 			/* CANDIDATE REFINEMENT */
@@ -205,10 +214,10 @@ public class TokenJoin extends Algorithm {
 						continue postLoop;
 					}
 
-					TIntObjectIterator<IndexTokenScore> it = idx.idx[R].iterator();
-					while (it.hasNext()) {
-						it.advance();
-						IndexTokenScore tokR = it.value();
+					TIntObjectIterator<IndexTokenScore> it2 = idx.idx[R].iterator();
+					while (it2.hasNext()) {
+						it2.advance();
+						IndexTokenScore tokR = it2.value();
 						IndexTokenScore tokS = idx.idx[S].get(tokR.id);
 						if (tokS != null) {
 							total -= tokR.value;
@@ -252,6 +261,21 @@ public class TokenJoin extends Algorithm {
 				log.put("percentage", 1.0 * R / collection.sets.length);
 				break;
 			}
+
+			if (duplicates != null) {
+				TIntIterator it = duplicates.iterator();
+				while (it.hasNext()) {
+					candsScores[it.next()] = 0;
+				}
+			}
+
+			if (cRejected[R] != null) {
+				TIntIterator it = cRejected[R].iterator();
+				while (it.hasNext()) {
+					candsScores[it.next()] = 0;
+				}
+			}
+
 			cands.clear();
 		}
 		secondHalfTime = System.nanoTime() - secondHalfTime;

@@ -42,14 +42,9 @@ public class IndexTokenScore implements Comparable<IndexTokenScore> {
 	 */
 	public double rest2;
 
-	/**
-	 * Elements of record that contain this token.
-	 */
-	public int[] elements;
 
 	public IndexTokenScore(int value, TIntList qelements, TIntList elements, String[] R) {
 		this.id = value;
-		this.elements = elements.toArray();
 
 		if (qelements == null) {
 			this.utilities = new double[0];

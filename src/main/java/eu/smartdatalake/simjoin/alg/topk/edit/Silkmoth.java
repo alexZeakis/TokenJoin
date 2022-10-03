@@ -13,9 +13,13 @@ import eu.smartdatalake.simjoin.util.ProgressBar;
 import eu.smartdatalake.simjoin.util.Verification;
 import eu.smartdatalake.simjoin.util.collection.FuzzyIntSetCollection;
 import eu.smartdatalake.simjoin.util.index.edit.FuzzySetIndex;
-import eu.smartdatalake.simjoin.util.index.edit.IndexTokenScore;
+import eu.smartdatalake.simjoin.util.index.edit.FuzzySetIndex2;
+import eu.smartdatalake.simjoin.util.index.edit.IndexTokenScore2;
 import eu.smartdatalake.simjoin.util.record.edit.SMRecordInfo;
+import gnu.trove.iterator.TIntDoubleIterator;
 import gnu.trove.iterator.TIntIterator;
+import gnu.trove.map.TIntDoubleMap;
+import gnu.trove.map.hash.TIntDoubleHashMap;
 import gnu.trove.set.TIntSet;
 import gnu.trove.set.hash.TIntHashSet;
 
@@ -62,8 +66,8 @@ public class Silkmoth extends Algorithm {
 
 		/* INDEX BUILDING */
 		indexTime = System.nanoTime();
-		FuzzySetIndex idx = new FuzzySetIndex();
-		idx.buildIndex(collection);
+		FuzzySetIndex2 idx = new FuzzySetIndex2(collection);
+		FuzzySetIndex idx2 = new FuzzySetIndex(collection);
 		indexTime = System.nanoTime() - indexTime;
 
 		/* BUCKET INITIALIZATION */
@@ -75,13 +79,24 @@ public class Silkmoth extends Algorithm {
 		/* THRESHOLD INITIALIZATION */
 		firstHalfTime = System.nanoTime();
 		double threshold = new ThresholdInitializer(deltaGeneration, mu, lambda, samplePercentage).initThreshold(choice,
-				k, collection, idx, B, cRejected, joinTime);
+				k, collection, idx2, B, cRejected, joinTime);
 		double initThreshold = threshold;
 		System.out.println("Init Threshold: " + initThreshold);
 
 		firstHalfTime = System.nanoTime() - firstHalfTime;
 
 		secondHalfTime = System.nanoTime();
+		
+		int maxRecLength = collection.sets[collection.sets.length - 1].length;
+		double[][] hits = new double[maxRecLength][];
+		for (int nor = 0; nor < maxRecLength; nor++)
+			hits[nor] = new double[maxRecLength];
+		boolean[] matchedElements = new boolean[maxRecLength];
+		boolean[] rejected = new boolean[collection.sets.length];
+		TIntSet cands = new TIntHashSet();
+		TIntDoubleMap[] candsElements = new TIntDoubleMap[collection.sets.length];
+		for (int S = 0; S < collection.sets.length; S++)
+			candsElements[S] = new TIntDoubleHashMap();
 		/* EXECUTE THE JOIN ALGORITHM */
 		ProgressBar pb = new ProgressBar(collection.sets.length);
 
@@ -94,54 +109,90 @@ public class Silkmoth extends Algorithm {
 			String[] RRR = collection.originalStrings[R];
 
 			/* SIGNATURE GENERATION */
-			SMRecordInfo querySet = new SMRecordInfo(R, RR, QR, idx.lengths, idx.idx[R], false);
+			SMRecordInfo querySet = new SMRecordInfo(R, RR, QR, idx, false);
 			querySet.computeUnflattenedSignature(idx, threshold, true, RRR);
 
 			// compute bounds for length filter
 			int recLength = collection.sets[R].length;
 			int recMaxLength = (int) Math.floor(collection.sets[R].length / threshold);
 
-			TIntSet localRejected = cRejected[R];
-			if (localRejected == null) {
-				localRejected = new TIntHashSet();
-				TIntSet duplicates = collection.hashGroups.get(collection.hashCodes[R]);
-				if (duplicates != null) {
-					localRejected.addAll(duplicates);
+			TIntSet duplicates = collection.hashGroups.get(collection.hashCodes[R]);
+			if (duplicates != null) {
+				TIntIterator it = duplicates.iterator();
+				while (it.hasNext()) {
+					rejected[it.next()] = true;
+				}
+			}
+
+			if (cRejected[R] != null) {
+				TIntIterator it = cRejected[R].iterator();
+				while (it.hasNext()) {
+					rejected[it.next()] = true;
 				}
 			}
 
 			/* CANDIDATE GENERATION */
-			TIntSet cands = new TIntHashSet();
-			TIntIterator it = querySet.KTR.iterator();
-			while (it.hasNext()) {
-				int token = it.next();
 
-				int true_min = Arrays.binarySearch(idx.lengths[token], R); // true_min is > 0, since i is in tokenList
-				int[] tempCands = idx.lengths[token];
-				int tempSize = tempCands.length;
+			for (int r = 0; r < querySet.unflattenedSignature.length; r++) {
+				for (int t = 0; t < querySet.unflattenedSignature[r].size(); t++) {
+					int token = querySet.unflattenedSignature[r].get(t);
 
-				for (int Si = true_min; Si < tempSize; Si++) {
-					int S = tempCands[Si];
-					if (R == S)
-						continue;
-					if (collection.sets[S].length > recMaxLength) {
-						break;
+					int true_min2 = Arrays.binarySearch(idx.recordIndex[token], R); // true_min is > 0, since i is in
+					// tokenList
+
+					int[] recordCands = idx.recordIndex[token];
+					int[] elementCands = idx.elementIndex[token];
+					int candsSize = recordCands.length;
+
+					while (true_min2 > 0 && recordCands[true_min2] == recordCands[true_min2 - 1]) // in case of multiple
+						// occasions of S
+						true_min2--;
+
+					for (int Si = true_min2; Si < candsSize; Si++) {
+						int S = recordCands[Si];
+						
+						if (rejected[S])
+							continue;
+						
+						int s = elementCands[Si];
+						if (R == S)
+							continue;
+						if (collection.sets[S].length > recMaxLength) {
+							break;
+						}
+
+						double score = Verification.verifyWithScore(collection.originalStrings[R][r],
+								collection.originalStrings[S][s]);
+						if (score >= querySet.elementBounds[r]) {
+							cands.add(S);
+							double val = candsElements[S].get(r);
+							if (val == candsElements[S].getNoEntryValue() || score > val)
+								candsElements[S].put(r, score);
+						}
 					}
-					if (localRejected.contains(S))
-						continue;
-
-					cands.add(S);
 				}
-			}
-
+			}			
+			
+			
 			PriorityQueue<SMCand> Q = new PriorityQueue<SMCand>();
 			TIntIterator cit = cands.iterator();
 			while (cit.hasNext()) {
 				int S = cit.next();
 				int candLength = collection.sets[S].length;
-				double score = 1.0 * recLength / candLength;
-				Q.add(new SMCand(S, collection.sets[R].length, score));
+
+				double total = recLength;
+				TIntDoubleIterator it3 = candsElements[S].iterator();
+				while (it3.hasNext()) {
+					it3.advance();
+					total -= 1.0;
+					total += it3.value();
+				}
+//				double score = 1.0 * recLength / candLength;
+				double score = total / (recLength + candLength - total);
+				Q.add(new SMCand(S, collection.sets[R].length, score));				
 			}
+			
+			cands.clear();
 
 			while (!Q.isEmpty() && Q.peek().score > threshold) {
 				SMCand cm = Q.poll();
@@ -149,99 +200,68 @@ public class Silkmoth extends Algorithm {
 				int candLength = collection.sets[cm.id].length;
 
 
-				if (cm.stage == 0) { // after Phase 1 and before Check Filter
-					/* CHECK FILTER */
-
-					boolean pass = false;
-					double totalUB = recLength;
-					for (int r = 0; r < querySet.unflattenedSignature.length; r++) {
-						cm.hits[r] = new double[candLength];
-						double maxNN = 0.0;
-
-						for (int t = 0; t < querySet.unflattenedSignature[r].size(); t++) {
-							int token = querySet.unflattenedSignature[r].get(t);
-							IndexTokenScore tok = idx.idx[S].get(token);
-							if (tok == null)
-								continue;
-							for (int s : tok.elements) {
-								cm.hits[r][s] = Verification.verifyWithScore(collection.originalStrings[R][r],
-										collection.originalStrings[S][s]);
-								if (cm.hits[r][s] >= querySet.elementBounds[r]) {
-									pass = true;
-								}
-								maxNN = Math.max(cm.hits[r][s], maxNN);
-							}
-						}
-
-						if (maxNN > 0) { // element had signature tokens
-							cm.nearestNeighborSim[r] = maxNN;
-							totalUB -= 1 - maxNN;
-						}
-
-					}
-
-					if (pass) {
-						cm.stage++;
-						cm.score = totalUB / (recLength + candLength - totalUB);
-						Q.add(cm);
-					}
-				} else if (cm.stage == 1) { // after Check Filter and before NNF
+				if (cm.stage == 0) { // after Check Filter and before NNF
 					/* NEAREST NEIGHBOR FILTER */
 					double persThreshold = threshold / (1.0 + threshold) * (recLength + candLength);
-					TIntSet matchedElements;
 
+					// INIT TOTALUB
 					double totalUB = 0;
-					matchedElements = new TIntHashSet();
 					for (int r = 0; r < collection.sets[R].length; r++) {
-						if (cm.nearestNeighborSim[r] > querySet.elementBounds[r]) {
-							matchedElements.add(r);
-							totalUB += cm.nearestNeighborSim[r];
-						} else {
-							totalUB += querySet.elementBounds[r];
-						}
+						totalUB += querySet.elementBounds[r];
+						matchedElements[r] = false;
 					}
+					
+					// INIT Elements from CF
+					TIntDoubleIterator it3 = candsElements[S].iterator();
+					while (it3.hasNext()) {
+						it3.advance();
+						int r = it3.key();
+						matchedElements[r] = true;
+						totalUB -= querySet.elementBounds[r];
+						totalUB += it3.value();
+
+						for (int nos = 0; nos < candLength; nos++)
+							hits[r][nos] = 0.0;
+					}
+					candsElements[S].clear();
+					
 
 					for (int r = 0; r < recLength; r++) {
-						if (matchedElements.contains(r)) {
+						if (matchedElements[r]) {
 							continue;
 						}
+						for (int nos = 0; nos < candLength; nos++)
+							hits[r][nos] = 0.0;
 
 						totalUB -= querySet.elementBounds[r];
 
 						int q = 3;
 						double maxSim = (q - 1.0) / q;
 
-						//double maxSim = 0.0;
-//						double UBStep = 1.0 / collection.sets[R][r].length;
 						double elemUB = 1.0;
 						for (int ti = 0; ti < collection.qsets[R][r].length; ti++) {
-//							elemUB -= UBStep;
 							elemUB = 1.0 * collection.originalStrings[R][r].length()
 									/ (collection.originalStrings[R][r].length() + ti + 1);
 							int token = collection.qsets[R][r][ti];
 
-							IndexTokenScore tok = idx.idx[cm.id].get(token);
+							IndexTokenScore2 tok = idx.idx[S].get(token);
 							if (tok == null)
 								continue;
 							if (tok != null) {
-								if (cm.hits[r] == null)
-									cm.hits[r] = new double[candLength];
 								for (int s : tok.elements) {
-									if (cm.hits[r][s] == 0.0) {
-										cm.hits[r][s] = Verification.verifyWithScore(collection.originalStrings[R][r],
+									if (hits[r][s] == 0.0) {
+										hits[r][s] = Verification.verifyWithScore(collection.originalStrings[R][r],
 												collection.originalStrings[S][s]);
 									}
-									maxSim = Math.max(maxSim, cm.hits[r][s]);
+									maxSim = Math.max(maxSim, hits[r][s]);
 
 								}
 							}
 							if (maxSim - elemUB >= 0.00000001)
 								break;
 						}
-						cm.nearestNeighborSim[r] = maxSim;
-
-						totalUB += maxSim;
-
+						totalUB += Math.max(elemUB, maxSim);
+						
 						if (persThreshold - totalUB > 0.000000001) {
 							break;
 						}
@@ -278,6 +298,20 @@ public class Silkmoth extends Algorithm {
 			if ((System.nanoTime() - joinTime) / 1000000000.0 > timeOut) { // more than 5 hours
 				log.put("percentage", 1.0 * R / collection.sets.length);
 				break;
+			}
+			
+			if (duplicates != null) {
+				TIntIterator it = duplicates.iterator();
+				while (it.hasNext()) {
+					rejected[it.next()] = false;
+				}
+			}
+
+			if (cRejected[R] != null) {
+				TIntIterator it = cRejected[R].iterator();
+				while (it.hasNext()) {
+					rejected[it.next()] = false;
+				}
 			}
 
 		}

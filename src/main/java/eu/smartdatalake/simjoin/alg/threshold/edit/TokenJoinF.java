@@ -62,14 +62,13 @@ public class TokenJoinF extends Algorithm {
 
 		/* INDEX BUILDING */
 		indexTime = System.nanoTime();
-		FuzzySetIndex idx = new FuzzySetIndex();
-		idx.buildIndex(collection);
+		FuzzySetIndex idx = new FuzzySetIndex(collection);
 		indexTime = System.nanoTime() - indexTime;
 		/* EXECUTE THE JOIN ALGORITHM */
 		ProgressBar pb = new ProgressBar(collection.sets.length);
 
 		TIntDoubleMap cands = new TIntDoubleHashMap();
-		
+
 		double uniqueToks = 0;
 		for (int R = 0; R < collection.sets.length; R++) {
 
@@ -78,8 +77,8 @@ public class TokenJoinF extends Algorithm {
 
 			/* RECORD INITIALIZATION */
 			startTime = System.nanoTime();
-			TJRecordInfo querySet = new TJRecordInfo(R, collection.sets[R], collection.qsets[R], idx.lengths,
-					idx.idx[R], threshold, globalOrdering, self);
+			TJRecordInfo querySet = new TJRecordInfo(R, collection.sets[R], collection.qsets[R], idx, threshold,
+					globalOrdering, self);
 
 			signatureGenerationTime += System.nanoTime() - startTime;
 
@@ -154,7 +153,7 @@ public class TokenJoinF extends Algorithm {
 				long localBasicTime = System.nanoTime();
 				UB = postBasic(R, S, querySet, idx, persThreshold, localUtilGathered + localSumStopped, posTok);
 				localBasicTime = System.nanoTime() - localBasicTime;
-				
+
 				logger.info(String.format("bla,%s,%s,%s,%s,%s", recLength, candLength, localJointTime / 1000000000.0,
 						localJointPosTime / 1000000000.0, localBasicTime / 1000000000.0));
 
@@ -184,7 +183,7 @@ public class TokenJoinF extends Algorithm {
 				log.put("percentage", 1.0 * R / collection.sets.length);
 				break;
 			}
-			
+
 			cands.clear();
 		}
 

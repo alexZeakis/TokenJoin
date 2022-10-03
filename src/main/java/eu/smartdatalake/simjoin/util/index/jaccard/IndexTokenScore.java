@@ -30,11 +30,9 @@ public class IndexTokenScore implements Comparable<IndexTokenScore> {
 	/**
 	 * Elements of record that contain this token.
 	 */
-	public int[] elements;
 
 	public IndexTokenScore(int value, TIntList elements, int[][] R) {
 		this.id = value;
-		this.elements = elements.toArray();
 		this.utilities = new double[elements.size()];
 
 		double start = 0;

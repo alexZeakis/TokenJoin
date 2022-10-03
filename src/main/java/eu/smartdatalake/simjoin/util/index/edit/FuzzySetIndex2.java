@@ -28,10 +28,9 @@ public class FuzzySetIndex2 {
 	
 	public int[][] recordIndex;
 	public int[][] elementIndex;
-	public int[] costs;
 	
 	@SuppressWarnings("unchecked")
-	public void buildIndex(FuzzyIntSetCollection collection) {
+	public FuzzySetIndex2(FuzzyIntSetCollection collection) {
 		idx = new TIntObjectMap[collection.sets.length];
 		
 		TIntObjectHashMap<TIntList> qtokElemsList = new TIntObjectHashMap<TIntList>();
@@ -69,7 +68,6 @@ public class FuzzySetIndex2 {
 			}
 		}
 
-		costs = new int[collection.numTokens];
 		TIntList[] recordIndexList = new TIntList[collection.numTokens];
 		TIntList[] elementIndexList = new TIntList[collection.numTokens];
 		for (int tok = 0; tok < collection.numTokens; tok++) {
@@ -80,11 +78,6 @@ public class FuzzySetIndex2 {
 		for (int i = 0; i < collection.sets.length; i++) {
 			for (int j = 0; j < collection.sets[i].length; j++) {
 				for (int token : collection.sets[i][j]) {
-					int len = recordIndexList[token].size();
-					if (len == 0)
-						costs[token] = 1;
-					else if (len > 0 && recordIndexList[token].get(len - 1) != i)
-						costs[token]++;
 					recordIndexList[token].add(i);
 					elementIndexList[token].add(j);
 				}

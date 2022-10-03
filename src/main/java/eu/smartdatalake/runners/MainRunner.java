@@ -52,6 +52,10 @@ public class MainRunner {
 			if (!Arrays.asList(model).contains(model))
 				throw new IllegalArgumentException("Invalid model. Valid values are: " + Arrays.toString(models));
 
+			System.setProperty("logFilename", logFile);
+			LoggerContext ctx = (LoggerContext) LogManager.getContext(false);
+			ctx.reconfigure();
+			
 			long duration = System.nanoTime();
 			FuzzyIntSetCollection collection = null;
 			try {
@@ -65,10 +69,6 @@ public class MainRunner {
 			}
 			duration = System.nanoTime() - duration;
 			System.out.println("Preparation time: " + duration / 1000000000.0 + " sec.");
-
-			System.setProperty("logFilename", logFile);
-			LoggerContext ctx = (LoggerContext) LogManager.getContext(false);
-			ctx.reconfigure();
 
 			if (similarity.equals("jaccard")) {
 				Algorithm alg = null;
@@ -98,7 +98,7 @@ public class MainRunner {
 							new ThresholdCompetitor("TJPJ - VUL", true, true, 2, true));
 					alg.selfJoin(collection, delta);
 					break;
-				case "TJK": // TJV
+				case "TJK": // TJK
 					alg = new eu.smartdatalake.simjoin.alg.topk.jaccard.TokenJoin(
 							new TopkCompetitor("TJK", 2, 0.90, 0.01, 2, 0.4));
 					alg.selfJoin(collection, k);
@@ -145,7 +145,7 @@ public class MainRunner {
 							new ThresholdCompetitor("TJPJ - VUL", true, true, 2, true));
 					alg.selfJoin(collection, delta);
 					break;
-				case "TJK": // TJV
+				case "TJK": // TJK
 					alg = new eu.smartdatalake.simjoin.alg.topk.edit.TokenJoin(
 							new TopkCompetitor("TJK", 2, 0.90, 0.01, 2, 0.4));
 					alg.selfJoin(collection, k);

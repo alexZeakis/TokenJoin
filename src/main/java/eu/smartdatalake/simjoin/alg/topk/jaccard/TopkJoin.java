@@ -60,8 +60,7 @@ public class TopkJoin extends Algorithm {
 
 		/* INDEX BUILDING */
 		indexTime = System.nanoTime();
-		FuzzySetIndex idx = new FuzzySetIndex();
-		idx.buildIndex(collection);
+		FuzzySetIndex idx = new FuzzySetIndex(collection);
 
 		int[][] tokens = new int[collection.sets.length][];
 		double[][] weights = new double[collection.sets.length][];

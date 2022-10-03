@@ -59,8 +59,7 @@ public class Silkmoth extends Algorithm {
 
 		/* BUILDING INDEX */
 		long indexTime = System.nanoTime();
-		FuzzySetIndex2 idx = new FuzzySetIndex2();
-		idx.buildIndex(collection);
+		FuzzySetIndex2 idx = new FuzzySetIndex2(collection);
 		indexTime = System.nanoTime() - indexTime;
 
 		int maxRecLength = collection.sets[collection.sets.length - 1].length;
@@ -87,8 +86,7 @@ public class Silkmoth extends Algorithm {
 
 			/* SIGNATURE GENERATION */
 			long localStartTime = System.nanoTime();
-//			SMRecordInfo querySet = new SMRecordInfo(R, RR, QR, idx.lengths, idx.idx[R], globalOrdering);
-			SMRecordInfo querySet = new SMRecordInfo(R, RR, QR, idx.costs, idx.idx[R], globalOrdering);
+			SMRecordInfo querySet = new SMRecordInfo(R, RR, QR, idx, globalOrdering);
 			querySet.computeUnflattenedSignature(idx, threshold, self, RRR);
 			signatureGenerationTime += System.nanoTime() - localStartTime;
 

@@ -61,12 +61,11 @@ public class TokenJoinF extends Algorithm {
 
 		/* INDEX BUILDING */
 		indexTime = System.nanoTime();
-		FuzzySetIndex idx = new FuzzySetIndex();
-		idx.buildIndex(collection);
+		FuzzySetIndex idx = new FuzzySetIndex(collection);
 		indexTime = System.nanoTime() - indexTime;
 		/* EXECUTE THE JOIN ALGORITHM */
 		ProgressBar pb = new ProgressBar(collection.sets.length);
-		
+
 		TIntDoubleMap cands = new TIntDoubleHashMap();
 
 		double uniqueToks = 0;
@@ -77,8 +76,7 @@ public class TokenJoinF extends Algorithm {
 
 			/* RECORD INITIALIZATION */
 			startTime = System.nanoTime();
-			TJRecordInfo querySet = new TJRecordInfo(R, collection.sets[R], idx.lengths, idx.idx[R], threshold,
-					globalOrdering, self);
+			TJRecordInfo querySet = new TJRecordInfo(R, collection.sets[R], idx, threshold, globalOrdering, self);
 
 			signatureGenerationTime += System.nanoTime() - startTime;
 
@@ -181,7 +179,7 @@ public class TokenJoinF extends Algorithm {
 				log.put("percentage", 1.0 * R / collection.sets.length);
 				break;
 			}
-			
+
 			cands.clear();
 		}
 

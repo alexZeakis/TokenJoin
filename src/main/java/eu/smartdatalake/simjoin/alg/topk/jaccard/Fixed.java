@@ -13,11 +13,10 @@ import eu.smartdatalake.simjoin.util.index.jaccard.FuzzySetIndex;
 import eu.smartdatalake.simjoin.util.index.jaccard.IndexTokenScore;
 import eu.smartdatalake.simjoin.util.record.RecordTokenScore;
 import eu.smartdatalake.simjoin.util.record.jaccard.TJRecordInfo;
-import gnu.trove.iterator.TIntDoubleIterator;
-import gnu.trove.map.TIntDoubleMap;
-import gnu.trove.map.hash.TIntDoubleHashMap;
+import gnu.trove.iterator.TIntIterator;
+import gnu.trove.list.TIntList;
+import gnu.trove.list.array.TIntArrayList;
 import gnu.trove.set.TIntSet;
-import gnu.trove.set.hash.TIntHashSet;
 
 /**
  * Baseline methods for Topk. For Jaccard Similarity.
@@ -44,8 +43,7 @@ public class Fixed extends Algorithm {
 
 		joinTime = System.nanoTime();
 
-		FuzzySetIndex idx = new FuzzySetIndex();
-		idx.buildIndex(collection);
+		FuzzySetIndex idx = new FuzzySetIndex(collection);
 
 		PriorityQueue<KPair> B = null;
 		double threshold = 0.0;
@@ -97,8 +95,7 @@ public class Fixed extends Algorithm {
 
 		joinTime = System.nanoTime();
 
-		FuzzySetIndex idx = new FuzzySetIndex();
-		idx.buildIndex(collection);
+		FuzzySetIndex idx = new FuzzySetIndex(collection);
 
 		PriorityQueue<KPair> B = new PriorityQueue<KPair>();
 		
@@ -161,19 +158,23 @@ public class Fixed extends Algorithm {
 		/* EXECUTE THE JOIN ALGORITHM */
 		collection.clearClusterings();
 		initVerificationTerms();
+		
+		TIntList cands = new TIntArrayList();
+		double[] candsScores = new double[collection.sets.length];
 
 		for (int R = 0; R < collection.sets.length; R++) {
-			TJRecordInfo querySet = new TJRecordInfo(R, collection.sets[R], idx.lengths, idx.idx[R], threshold, true,
+			TJRecordInfo querySet = new TJRecordInfo(R, collection.sets[R], idx, threshold, true,
 					true);
 
-			TIntDoubleMap cands = new TIntDoubleHashMap();
 			int recLength = collection.sets[R].length;
 			int recMaxLength = (int) Math.floor(recLength / threshold);
 
-			TIntSet rejected = new TIntHashSet();
 			TIntSet duplicates = collection.hashGroups.get(collection.hashCodes[R]);
 			if (duplicates != null) {
-				rejected.addAll(duplicates);
+				TIntIterator it = duplicates.iterator();
+				while (it.hasNext()) {
+					candsScores[it.next()] = -1;
+				}
 			}
 
 			int posTok = 0;
@@ -199,24 +200,20 @@ public class Fixed extends Algorithm {
 					if (collection.sets[S].length > recMaxLength) {
 						break;
 					}
-					if (rejected.contains(S))
+					if (candsScores[S] == -1) // duplicate or verified
 						continue;
 
-					cands.adjustOrPutValue(S, zetUtilScore, zetUtilScore);
-
-					double persThreshold = threshold / (1.0 + threshold) * (recLength + collection.sets[S].length);
-					if (persThreshold - (cands.get(S) + querySet.sumStopped) > .0000001) {
-						cands.remove(S);
-						rejected.add(S);
-					}
+					if (candsScores[S] == 0)
+						cands.add(S);
+					candsScores[S] += zetUtilScore;
 				}
 			}
 
-			TIntDoubleIterator it = cands.iterator();
+			TIntIterator it = cands.iterator();
 			while (it.hasNext()) {
-				it.advance();
-				int S = it.key();
-				double utilGathered = it.value();
+				int S = it.next();
+				double utilGathered = candsScores[S];
+				candsScores[S] = 0;
 				int candLength = collection.sets[S].length;
 
 				double persThreshold = threshold / (1.0 + threshold) * (recLength + candLength);
@@ -248,6 +245,14 @@ public class Fixed extends Algorithm {
 				log.put("percentage", 1.0 * R / collection.sets.length);
 				break;
 			}
+			
+			if (duplicates != null) {
+				it = duplicates.iterator();
+				while (it.hasNext()) {
+					candsScores[it.next()] = 0;
+				}
+			}
+			cands.clear();
 		}
 	}
 

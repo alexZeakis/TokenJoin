@@ -4,10 +4,10 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
+import eu.smartdatalake.simjoin.util.index.edit.FuzzySetIndex;
 import eu.smartdatalake.simjoin.util.index.edit.IndexTokenScore;
 import eu.smartdatalake.simjoin.util.record.RecordTokenScore;
 import gnu.trove.iterator.TIntObjectIterator;
-import gnu.trove.map.TIntObjectMap;
 
 /**
  * Class containing necessary information about a record, i.e. order of tokens and θ.
@@ -22,19 +22,19 @@ public class TJRecordInfo{
 	public double theta;
 	public RecordTokenScore[] tokens;
 
-	public TJRecordInfo(int index, int[][] R, int[][] qR, int[][] lengths, TIntObjectMap<IndexTokenScore> values,
+	public TJRecordInfo(int index, int[][] R, int[][] qR, FuzzySetIndex idx,
 			double simThreshold, boolean globalOrdering, boolean self) {
 
 
 		recordLength = R.length;
 
 		List<RecordTokenScore> tempTokens = new ArrayList<RecordTokenScore>(); 
-		TIntObjectIterator<IndexTokenScore> it = values.iterator();
+		TIntObjectIterator<IndexTokenScore> it = idx.idx[index].iterator();
 		while (it.hasNext()) {
 			it.advance();
 			if (it.value().value == 0.0)	//not a qchunk
 				continue;
-			double score = (globalOrdering) ? it.key() : lengths[it.key()].length / it.value().value;
+			double score = (globalOrdering) ? it.key() : idx.lengths[it.key()].length / it.value().value;
 			tempTokens.add(new RecordTokenScore(it.key(), score, it.value().value));
 		}
 		tokens = new RecordTokenScore[tempTokens.size()];

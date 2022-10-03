@@ -31,7 +31,7 @@ public class FuzzySetIndex {
 	 * @param collection: Collection of records
 	 */
 	@SuppressWarnings("unchecked")
-	public void buildIndex(FuzzyIntSetCollection collection) {
+	public FuzzySetIndex(FuzzyIntSetCollection collection) {
 		TIntList[] lengthsList = new TIntList[collection.numTokens];
 
 		for (int i = 0; i < collection.numTokens; i++) {

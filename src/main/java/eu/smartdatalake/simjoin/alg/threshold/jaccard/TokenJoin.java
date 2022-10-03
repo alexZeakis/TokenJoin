@@ -1,11 +1,5 @@
 package eu.smartdatalake.simjoin.alg.threshold.jaccard;
 
-import java.io.FileInputStream;
-import java.io.FileNotFoundException;
-import java.io.FileOutputStream;
-import java.io.IOException;
-import java.io.ObjectOutputStream;
-import java.io.ObjectInputStream;
 import java.util.Arrays;
 
 import org.json.simple.JSONObject;
@@ -19,12 +13,10 @@ import eu.smartdatalake.simjoin.util.index.jaccard.FuzzySetIndex;
 import eu.smartdatalake.simjoin.util.index.jaccard.IndexTokenScore;
 import eu.smartdatalake.simjoin.util.record.RecordTokenScore;
 import eu.smartdatalake.simjoin.util.record.jaccard.TJRecordInfo;
-import gnu.trove.iterator.TIntDoubleIterator;
+import gnu.trove.iterator.TIntIterator;
 import gnu.trove.iterator.TIntObjectIterator;
-import gnu.trove.map.TIntDoubleMap;
-import gnu.trove.map.hash.TIntDoubleHashMap;
-
-import org.openjdk.jol.info.GraphLayout;
+import gnu.trove.list.TIntList;
+import gnu.trove.list.array.TIntArrayList;
 
 /**
  * Class for executing TokenJoin with Jaccard Similarity.
@@ -55,14 +47,9 @@ public class TokenJoin extends Algorithm {
 	 */
 	@SuppressWarnings("unchecked")
 	public void selfJoin(FuzzyIntSetCollection collection, double threshold) {
-		
+
 		collection.clearClusterings();
 		initVerificationTerms();
-		
-//		System.out.println(GraphLayout.parseInstance(collection).totalSize());
-
-//		if (hybrid)
-//			hybridLimit = 1 - (1 - threshold) / 2;
 
 		System.out.println(String.format("\n%s with threshold: %s and (%s,%s,%s,%s,%s)", method, threshold, self,
 				globalOrdering, posFilter, jointFilter, verificationAlg));
@@ -71,31 +58,27 @@ public class TokenJoin extends Algorithm {
 
 		/* INDEX BUILDING */
 		indexTime = System.nanoTime();
-		FuzzySetIndex idx = new FuzzySetIndex();
-		idx.buildIndex(collection);
+		FuzzySetIndex idx = new FuzzySetIndex(collection);
 		indexTime = System.nanoTime() - indexTime;
 		/* EXECUTE THE JOIN ALGORITHM */
 		ProgressBar pb = new ProgressBar(collection.sets.length);
-		
-//		System.out.println(GraphLayout.parseInstance(idx).totalSize());
-		
-		TIntDoubleMap cands = new TIntDoubleHashMap();
+
+		TIntList cands = new TIntArrayList();
+		double[] candsScores = new double[collection.sets.length];
 
 		double uniqueToks = 0;
 		for (int R = 0; R < collection.sets.length; R++) {
-			
 			// progress bar
 			pb.progress(joinTime, totalMatches);
-			
+
 			/* RECORD INITIALIZATION */
 			startTime = System.nanoTime();
-			TJRecordInfo querySet = new TJRecordInfo(R, collection.sets[R], idx.lengths, idx.idx[R], threshold,
-					globalOrdering, self);
+			TJRecordInfo querySet = new TJRecordInfo(R, collection.sets[R], idx, threshold, globalOrdering, self);
 			signatureGenerationTime += System.nanoTime() - startTime;
 
 			/* CANDIDATE GENERATION */
 			startTime = System.nanoTime();
-			
+
 			int recLength = collection.sets[R].length;
 			int recMaxLength = (int) Math.floor(recLength / threshold);
 
@@ -122,19 +105,21 @@ public class TokenJoin extends Algorithm {
 						break;
 					}
 
-					cands.adjustOrPutValue(S, zetUtilScore, zetUtilScore);
+					if (candsScores[S] == 0)
+						cands.add(S);
+					candsScores[S] += zetUtilScore;
 				}
 			}
 			candGenands += cands.size();
 			phase1Time += System.nanoTime() - startTime;
-			
+
 			/* CANDIDATE REFINEMENT */
 			startTime = System.nanoTime();
-			TIntDoubleIterator it = cands.iterator();
+			TIntIterator it = cands.iterator();
 			while (it.hasNext()) {
-				it.advance();
-				int S = it.key();
-				double utilGathered = it.value();
+				int S = it.next();
+				double utilGathered = candsScores[S];
+				candsScores[S] = 0;
 				int candLength = collection.sets[S].length;
 
 				double persThreshold = threshold / (1.0 + threshold) * (recLength + candLength);
@@ -153,7 +138,7 @@ public class TokenJoin extends Algorithm {
 					UB = postPositional(R, S, querySet, idx, persThreshold, utilGathered, querySet.sumStopped, posTok);
 				else
 					UB = postBasic(R, S, querySet, idx, persThreshold, total, posTok);
-				
+
 				jointTime += System.nanoTime() - localStartTime2;
 				if (persThreshold - UB > 0.000000001)
 					continue;
@@ -170,6 +155,10 @@ public class TokenJoin extends Algorithm {
 
 				if (threshold - score > 0.000000001)
 					continue;
+//				System.out.println("bla,"+collection.keys[R]+ ","+collection.keys[S]);
+//				System.out.println(R+" "+S+" "+score);
+//				System.out.println(Arrays.toString(collection.originalStrings[R]));
+//				System.out.println(Arrays.toString(collection.originalStrings[S]));
 				totalMatches++;
 			}
 			phase2Time += System.nanoTime() - startTime;
@@ -179,8 +168,9 @@ public class TokenJoin extends Algorithm {
 				log.put("percentage", 1.0 * R / collection.sets.length);
 				break;
 			}
-			
+
 			cands.clear();
+//			candsScores = null;
 		}
 
 		uniqueToks /= collection.sets.length;
@@ -200,14 +190,14 @@ public class TokenJoin extends Algorithm {
 
 	protected double postJoint(int R, int S, TJRecordInfo querySet, FuzzySetIndex idx, double persThreshold,
 			double utilGathered, double UBR, int posTok) {
-	
+
 		for (int t = posTok; t < querySet.tokens.length; t++) {
 			RecordTokenScore tokenScore = querySet.tokens[t];
 			int token = tokenScore.id;
 			double zetUtilScore = tokenScore.utility;
-	
+
 			UBR -= tokenScore.utility;
-	
+
 			IndexTokenScore tokS = idx.idx[S].get(token);
 			if (tokS != null) {
 				utilGathered += zetUtilScore;
@@ -225,7 +215,7 @@ public class TokenJoin extends Algorithm {
 				}
 			}
 		}
-	
+
 		double total = utilGathered + UBR;
 		TIntObjectIterator<IndexTokenScore> it = idx.idx[R].iterator();
 		while (it.hasNext()) {
@@ -234,17 +224,17 @@ public class TokenJoin extends Algorithm {
 			IndexTokenScore tokS = idx.idx[S].get(tokR.id);
 			if (tokS != null) {
 				total -= tokR.value;
-	
+
 				int len = Math.min(tokR.utilities.length, tokS.utilities.length) - 1;
 				double utilScore = Math.min(tokR.utilities[len], tokS.utilities[len]);
 				total += utilScore;
 			}
-	
+
 			if (persThreshold - total > .0000001) {
 				return total;
 			}
 		}
-	
+
 		return total;
 	}
 

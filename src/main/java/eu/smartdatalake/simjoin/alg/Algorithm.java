@@ -27,13 +27,17 @@ public class Algorithm {
 
 	protected JSONObject log;
 
-//	protected long timeOut = 18000;
-	protected long timeOut = 172800;
+	protected long timeOut = 18000;
+//	protected long timeOut = 172800;
 
 	protected long LimitReject = 500000000, noReject = 0;
 
 	public void selfJoin(FuzzyIntSetCollection collection, double threshold) {
 
+	}
+	
+	public double selfJoin(FuzzyIntSetCollection collection, int k) {
+		return 0.0;
 	}
 
 	@SuppressWarnings("unchecked")
