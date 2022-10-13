@@ -1,5 +1,5 @@
 import sys
-import pd
+import pandas as pd
 import os
 from settings import dirs
 
@@ -41,4 +41,4 @@ for name, dir in dirs.items():
             counts[size] += 1
 print(times, counts)
 
-(pd.DataFrame(times) / pd.Series(counts)).T * 1000000
+print((pd.DataFrame(times) / pd.Series(counts)).T * 1000000)

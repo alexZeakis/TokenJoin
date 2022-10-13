@@ -283,6 +283,10 @@ public class Silkmoth extends Algorithm {
 					}
 				}
 			}
+			
+			while (!Q.isEmpty()) {
+				candsElements[Q.poll().id].clear();
+			}
 
 			if ((System.nanoTime() - joinTime) / 1000000000.0 > timeOut) { // more than 5 hours
 				log.put("percentage", 1.0 * R / collection.sets.length);

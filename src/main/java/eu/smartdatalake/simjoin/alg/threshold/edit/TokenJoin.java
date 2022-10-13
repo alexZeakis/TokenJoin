@@ -159,11 +159,6 @@ public class TokenJoin extends Algorithm {
 				if (threshold - score > 0.000000001)
 					continue;
 
-				if (score < 1) {
-					System.out.println(R + " " + S + " " + score);
-					System.out.println(Arrays.toString(collection.originalStrings[R]));
-					System.out.println(Arrays.toString(collection.originalStrings[S]));
-				}
 				totalMatches++;
 //				logger.info("bla," + R + "," + S + "," + score);
 			}

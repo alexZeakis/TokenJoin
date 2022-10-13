@@ -16,7 +16,7 @@ figsize = (30, 7)
 #            'o-', 'x-', '*-', '^-', '>-', '+-']
 
 
-markers = ['o', '^', 's', '*']
+markers = ['o', '^', 's', '*', 'X']
 
 
 dirs = {"FLICKR": "edit",
@@ -63,7 +63,8 @@ def save_legend_cands(sub_methods, filename):
     fig = plt.figure()
     fig.add_subplot(111)
     
-    filters = [('#f5ba87', 'CF (SM)'), ('#ff7f0e', 'NNF (SM)'),
+    filters = [('#f5ba87', 'CF (SM)'), ('#ff7f0e', 'NNF (SM)'), 
+               ('#abd2ed', 'Pre-Refinement (TJ)'),
                ('#6eb8eb', 'Basic (TJ)'), ('#3c8ec7', 'Positional (TJP)'),
                ('#1f77b4', 'Joint (TJPJ)'), 
                ('#fff', '//', 'VER'), ('#fff', '.', 'Matches')]
@@ -101,7 +102,7 @@ def prepare_times(l, sub_methods):
 
 
 
-def prepare_terms(l, sub_methods):
+def prepare_terms(l, sub_methods, norm=False):
     rows = []
     for line in l:
         j = json.loads(line)
@@ -112,16 +113,24 @@ def prepare_terms(l, sub_methods):
         if j['name'] == 'SM':
             final_j = {'N_CG' : j['terms']['candGen'], 'N_CF' : j['terms']['check_filter'],
                        'N_NNF' : j['terms']['nnf'], 'N_Matches' : j['terms']['total'],
-                       'Method' : j['name'], 'Size' : j['size'], 'Threshold' : j['threshold']}
+                       'Method' : j['name'], 'Size' : j['size'], 'Threshold' : j['threshold'],
+                       'Time': j['times']['total']}
         else:
             final_j = {'N_CG' : j['terms']['candGen'], 'N_PR' : j['terms']['candRef'],
                        'N_REF' : j['terms']['verifiable'], 'N_Matches' : j['terms']['total'],
-                       'Method' : j['name'], 'Size' : j['size'], 'Threshold' : j['threshold']}
+                       'Method' : j['name'], 'Size' : j['size'], 'Threshold' : j['threshold'],
+                       'Time': j['times']['total']}
 
         rows.append(final_j)
         
     max_size = max([row['Size'] for row in rows])
     for row in rows:
+        #normalization by size
+        if norm:
+            for key in row:
+                if key.startswith('N_'):
+                    row[key] = row[key] / row['Size']
+        
         row['Size'] = '{}%'.format(int(round(row['Size']/max_size, 2)*100))  
         
         
@@ -143,11 +152,14 @@ def prepare_terms(l, sub_methods):
         row2['Method'] = 'TJ'
         row2['Size'] = row_list[0]['Size'] 
         row2['Threshold'] = row_list[0]['Threshold']   
+        
+        row2['Time'] = 0
         for row in row_list:
             row2[f"N_{row['Method']}"] = row['N_REF']
             row2['N_Matches'] = row['N_Matches']   
             row2['N_CG'] = row['N_CG']  
             row2['N_PR'] = row['N_PR']
+            row2['Time'] = max(row2['Time'], row['Time'])
         final_rows.append(row2)
         
     return final_rows
@@ -160,10 +172,14 @@ def plot_bar(row, no, no_methods, axes, linewidth=3):
     if row['Method'] == 'SM':
         filters = [('#f5ba87', 'N_CG'), ('#ff7f0e', 'N_CF'), ('#ff7f0e', 'N_NNF')] 
     else:
+        #filters = [('#abd2ed', 'N_CG'), ('#6eb8eb', 'N_PR'), ('#3c8ec7', 'N_TJB'), 
         filters = [('#6eb8eb', 'N_PR'), ('#3c8ec7', 'N_TJB'), 
-                  ('#1f77b4', 'N_TJP'), ('#1f77b4', 'N_TJPJ')]  #blue
+                   ('#1f77b4', 'N_TJP'), ('#1f77b4', 'N_TJPJ')]  #blue
         
     for c, filt in filters:
+        #TODO: REMOVE THIS
+        if filt not in row:
+            continue
         axes.bar(no, row[filt], color=c,
                  #hatch=hatches[no % no_methods],
                  width=0.95, linewidth=linewidth, edgecolor='black')

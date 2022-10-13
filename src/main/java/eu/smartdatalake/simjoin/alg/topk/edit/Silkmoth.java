@@ -86,7 +86,7 @@ public class Silkmoth extends Algorithm {
 		firstHalfTime = System.nanoTime() - firstHalfTime;
 
 		secondHalfTime = System.nanoTime();
-		
+
 		int maxRecLength = collection.sets[collection.sets.length - 1].length;
 		double[][] hits = new double[maxRecLength][];
 		for (int nor = 0; nor < maxRecLength; nor++)
@@ -150,10 +150,10 @@ public class Silkmoth extends Algorithm {
 
 					for (int Si = true_min2; Si < candsSize; Si++) {
 						int S = recordCands[Si];
-						
+
 						if (rejected[S])
 							continue;
-						
+
 						int s = elementCands[Si];
 						if (R == S)
 							continue;
@@ -163,6 +163,7 @@ public class Silkmoth extends Algorithm {
 
 						double score = Verification.verifyWithScore(collection.originalStrings[R][r],
 								collection.originalStrings[S][s]);
+
 						if (score >= querySet.elementBounds[r]) {
 							cands.add(S);
 							double val = candsElements[S].get(r);
@@ -171,9 +172,8 @@ public class Silkmoth extends Algorithm {
 						}
 					}
 				}
-			}			
-			
-			
+			}
+
 			PriorityQueue<SMCand> Q = new PriorityQueue<SMCand>();
 			TIntIterator cit = cands.iterator();
 			while (cit.hasNext()) {
@@ -187,18 +187,18 @@ public class Silkmoth extends Algorithm {
 					total -= 1.0;
 					total += it3.value();
 				}
-//				double score = 1.0 * recLength / candLength;
+
 				double score = total / (recLength + candLength - total);
-				Q.add(new SMCand(S, collection.sets[R].length, score));				
+//				score = 1.0 * recLength / candLength;
+				Q.add(new SMCand(S, collection.sets[R].length, score));
 			}
-			
+
 			cands.clear();
 
 			while (!Q.isEmpty() && Q.peek().score > threshold) {
 				SMCand cm = Q.poll();
 				int S = cm.id;
 				int candLength = collection.sets[cm.id].length;
-
 
 				if (cm.stage == 0) { // after Check Filter and before NNF
 					/* NEAREST NEIGHBOR FILTER */
@@ -210,7 +210,7 @@ public class Silkmoth extends Algorithm {
 						totalUB += querySet.elementBounds[r];
 						matchedElements[r] = false;
 					}
-					
+
 					// INIT Elements from CF
 					TIntDoubleIterator it3 = candsElements[S].iterator();
 					while (it3.hasNext()) {
@@ -224,7 +224,6 @@ public class Silkmoth extends Algorithm {
 							hits[r][nos] = 0.0;
 					}
 					candsElements[S].clear();
-					
 
 					for (int r = 0; r < recLength; r++) {
 						if (matchedElements[r]) {
@@ -261,7 +260,7 @@ public class Silkmoth extends Algorithm {
 								break;
 						}
 						totalUB += Math.max(elemUB, maxSim);
-						
+
 						if (persThreshold - totalUB > 0.000000001) {
 							break;
 						}
@@ -278,6 +277,7 @@ public class Silkmoth extends Algorithm {
 					GraphVerifier eval4 = new GraphVerifier();
 					double score = eval4.verifyGraph(collection.originalStrings[R], collection.originalStrings[S],
 							cm.hits, collection.getClustering(R), collection.getClustering(S), persThreshold, 0);
+
 					if (score == 1.0)
 						continue;
 
@@ -294,12 +294,16 @@ public class Silkmoth extends Algorithm {
 					}
 				}
 			}
+			
+			while (!Q.isEmpty()) {
+				candsElements[Q.poll().id].clear();
+			}
 
 			if ((System.nanoTime() - joinTime) / 1000000000.0 > timeOut) { // more than 5 hours
 				log.put("percentage", 1.0 * R / collection.sets.length);
 				break;
 			}
-			
+
 			if (duplicates != null) {
 				TIntIterator it = duplicates.iterator();
 				while (it.hasNext()) {

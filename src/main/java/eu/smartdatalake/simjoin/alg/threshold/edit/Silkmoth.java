@@ -38,6 +38,7 @@ public class Silkmoth extends Algorithm {
 		log = new JSONObject();
 		JSONObject args = new JSONObject();
 		args.put("self", self);
+		args.put("verificationAlg", verificationAlg);
 		log.put("args", args);
 	}
 
@@ -133,7 +134,7 @@ public class Silkmoth extends Algorithm {
 				}
 			}
 
-			candGenands += cands.size();
+			CFCands += cands.size();
 			candGenTime += System.nanoTime() - localStartTime;
 
 

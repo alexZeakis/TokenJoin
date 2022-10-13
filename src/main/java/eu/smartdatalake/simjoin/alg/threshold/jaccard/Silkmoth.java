@@ -38,6 +38,7 @@ public class Silkmoth extends Algorithm {
 		log = new JSONObject();
 		JSONObject args = new JSONObject();
 		args.put("self", self);
+		args.put("verificationAlg", verificationAlg);
 		log.put("args", args);
 	}
 
@@ -126,7 +127,7 @@ public class Silkmoth extends Algorithm {
 				}
 			}
 
-			candGenands += cands.size();
+			CFCands += cands.size();
 			candGenTime += System.nanoTime() - localStartTime;
 
 			TIntIterator it2 = cands.iterator();
@@ -204,7 +205,7 @@ public class Silkmoth extends Algorithm {
 						break;
 					}
 				}
-
+				
 				double score = totalUB / (recLength + candLength - totalUB);
 				NNFTime += System.nanoTime() - localStartTime2;
 				if (threshold - score > 0.000000001) {
@@ -219,7 +220,6 @@ public class Silkmoth extends Algorithm {
 				GraphVerifier eval4 = new GraphVerifier();
 				score = eval4.verifyGraph(collection.sets[R], collection.sets[S], hits, collection.getClustering(R),
 						collection.getClustering(S), persThreshold, verificationAlg);
-
 				verificationTime += System.nanoTime() - localStartTime2;
 
 				if (threshold - score > 0.000000001) {

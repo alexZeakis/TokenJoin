@@ -21,7 +21,7 @@ public class MainRunner {
 			
 			String similarity = "jaccard", logFile = "", inputFile = "", model = "TJ";
 			double delta = 0.9;
-			int k = 500;
+			int k = 500, ver=0;
 			for (int i = 0; i < args.length; i += 2) {
 				if (args[i].equals("--similarity") || args[i].equals("-s"))
 					similarity = args[i + 1].toLowerCase();
@@ -35,6 +35,8 @@ public class MainRunner {
 					delta = Double.parseDouble(args[i + 1]);
 				if (args[i].equals("--k") || args[i].equals("-k"))
 					k = Integer.parseInt(args[i + 1]);
+				if (args[i].equals("--verification") || args[i].equals("-v"))
+					ver = Integer.parseInt(args[i + 1]);				
 			}
 
 			if (logFile.equals(""))
@@ -75,22 +77,22 @@ public class MainRunner {
 				switch (model) {
 				case "SM": // SM;
 					alg = new eu.smartdatalake.simjoin.alg.threshold.jaccard.Silkmoth(
-							new ThresholdCompetitor("SM", false, 0));
+							new ThresholdCompetitor("SM", false, ver));
 					alg.selfJoin(collection, delta);
 					break;
 				case "TJ": // TJB
 					alg = new eu.smartdatalake.simjoin.alg.threshold.jaccard.TokenJoin(
-							new ThresholdCompetitor("TJB", false, false, 0, true));
+							new ThresholdCompetitor("TJB", false, false, ver, true));
 					alg.selfJoin(collection, delta);
 					break;
 				case "TJP": // TJP
 					alg = new eu.smartdatalake.simjoin.alg.threshold.jaccard.TokenJoin(
-							new ThresholdCompetitor("TJP", true, false, 0, true));
+							new ThresholdCompetitor("TJP", true, false, ver, true));
 					alg.selfJoin(collection, delta);
 					break;
 				case "TJPJ": // TJPJ
 					alg = new eu.smartdatalake.simjoin.alg.threshold.jaccard.TokenJoin(
-							new ThresholdCompetitor("TJPJ", true, true, 0, true));
+							new ThresholdCompetitor("TJPJ", true, true, ver, true));
 					alg.selfJoin(collection, delta);
 					break;
 				case "TJV": // TJV
@@ -122,22 +124,22 @@ public class MainRunner {
 				switch (model) {
 				case "SM": // SM;
 					alg = new eu.smartdatalake.simjoin.alg.threshold.edit.Silkmoth(
-							new ThresholdCompetitor("SM", false, 0));
+							new ThresholdCompetitor("SM", false, ver));
 					alg.selfJoin(collection, delta);
 					break;
 				case "TJ": // TJB
 					alg = new eu.smartdatalake.simjoin.alg.threshold.edit.TokenJoin(
-							new ThresholdCompetitor("TJB", false, false, 0, true));
+							new ThresholdCompetitor("TJB", false, false, ver, true));
 					alg.selfJoin(collection, delta);
 					break;
 				case "TJP": // TJP
 					alg = new eu.smartdatalake.simjoin.alg.threshold.edit.TokenJoin(
-							new ThresholdCompetitor("TJP", true, false, 0, true));
+							new ThresholdCompetitor("TJP", true, false, ver, true));
 					alg.selfJoin(collection, delta);
 					break;
 				case "TJPJ": // TJPJ
 					alg = new eu.smartdatalake.simjoin.alg.threshold.edit.TokenJoin(
-							new ThresholdCompetitor("TJPJ", true, true, 0, true));
+							new ThresholdCompetitor("TJPJ", true, true, ver, true));
 					alg.selfJoin(collection, delta);
 					break;
 				case "TJV": // TJV

@@ -524,14 +524,14 @@ public class GraphVerifier {
 
 				si++;
 			}
-			if (alg > 0) { // UB & LB
+//			if (alg > 0) { // UB & LB
 				UB -= 1 - nnEdges[ri];
 				if (persThreshold - UB > 0.0000001) {
 					UBSaved1++;
 					initHitsTime += System.nanoTime() - localStartTime;
 					return UB / (originalRLen + originalSLen - UB);
 				}
-			}
+//			}
 			ri++;
 		}
 		initHitsTime += System.nanoTime() - localStartTime;
@@ -662,14 +662,14 @@ public class GraphVerifier {
 
 				si++;
 			}
-			if (alg > 0) { // UB & LB
+//			if (alg > 0) { // UB & LB
 				UB -= 1 - nnEdges[ri];
 				if (persThreshold - UB > 0.0000001) {
 					UBSaved1++;
 					initHitsTime += System.nanoTime() - localStartTime;
 					return UB / (originalRLen + originalSLen - UB);
 				}
-			}
+//			}
 			ri++;
 		}
 		initHitsTime += System.nanoTime() - localStartTime;

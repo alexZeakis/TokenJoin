@@ -25,7 +25,7 @@ for pos, name in enumerate(datasets):
     else:
         ks = [50, 100, 500, 1000]
     no_axis = {(k, m):no for no, (k, m) in enumerate([(k, m) for k in ks for m in sub_methods+['']])}
-    file = f'{log_dir}logs/experiment/topk/{name.lower()}.log'
+    file = f'{log_dir}logs/experiment/topk_k/{name.lower()}.log'
     if not os.path.exists(file):
         continue
     with open(file) as f:
@@ -33,6 +33,7 @@ for pos, name in enumerate(datasets):
         rows = pd.DataFrame(rows)
         df = rows.pivot(index='K', columns='Method', values='Total')   
         df = df.loc[ks, sub_methods]
+        total_df = pd.concat([total_df, df])
         
         fig, axes = plt.subplots(nrows=1, ncols=1)
         plot_line(df, axes, (0, int(ks[-1]*1.05)))
@@ -47,6 +48,6 @@ save_legend_time(sub_methods, f'{log_dir}/plots/topk_time_legend.pdf')
         # total_df = pd.concat([total_df, pd.concat({name: df}, names=['Dataset'])])
 
 # plt.show()
-# print(total_df.apply(lambda x: x['SMK'] / x['TJK'], axis=1).describe())
-# print(total_df.apply(lambda x: x['FJK'] / x['TJK'], axis=1).describe())
+print(total_df.apply(lambda x: x['SMK'] / x['TJK'], axis=1).describe())
+print(total_df.apply(lambda x: x['FJK'] / x['TJK'], axis=1).describe())
 
