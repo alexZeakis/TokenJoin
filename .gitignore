@@ -1,9 +1,11 @@
-execution/python/Terms.py
 
 target/*
 data/*
 /target/
 
+execution/java/plots2/*
+
+execution/python/legacy/*
 execution/examples/logs/*
 logs/*
 logs

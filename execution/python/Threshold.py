@@ -12,7 +12,7 @@ if len(sys.argv) != 2:
 log_dir = sys.argv[1]
 
 
-plt.rcParams.update({'font.size': 20})
+# plt.rcParams.update({'font.size': 20})
 
 
 datasets = ['YELP', 'GDELT', 'ENRON', 'FLICKR', 'DBLP', 'MIND']
@@ -28,7 +28,7 @@ total_df = pd.DataFrame()
 for pos, name in enumerate(datasets):
     # if pos!=0:
     #     continue
-    file = f'{log_dir}logs/experiment/threshold_threshold/{name.lower()}.log'
+    file = f'{log_dir}logs/threshold_threshold/{name.lower()}.log'
     if not os.path.exists(file):
         continue
 
@@ -69,9 +69,9 @@ print((total_df['SM'] / total_df['TJPJ']).describe())
 print((total_df['TJB'] / total_df['TJPJ']).describe())
 print((total_df['TJP'] / total_df['TJPJ']).describe())
 
-    
 
 final_methods = ["SM", "TJ"]
+deltas2 = ['', '0.90', '', '0.80', '', '0.70', '', '0.60']
 no_methods = len(final_methods) + 1
 no_axis = {(d, m):no for no, (d, m) in enumerate([(d, m) for d in deltas for m in final_methods+['']])}
 
@@ -82,7 +82,7 @@ cands_stats2 = []
 for pos, name in enumerate(datasets):
     # if pos!=2:
     #     continue
-    file = f'{log_dir}logs/experiment/threshold_threshold/{name.lower()}.log'
+    file = f'{log_dir}logs/threshold_threshold/{name.lower()}.log'
     if not os.path.exists(file):
         continue
     with open(file) as f:
@@ -100,6 +100,7 @@ for pos, name in enumerate(datasets):
             plot_bar(row, no, no_methods, axes)  
             if logy:
                 axes.set_yscale('log')
+                # axes.set_ylim(axes.get_ylim()[0], pow(10,5))
             
             
         fix_axes(axes, arange(0.5, len(deltas)*3+0.5, 3),

@@ -25,7 +25,7 @@ for pos, name in enumerate(datasets):
     else:
         ks = [50, 100, 500, 1000]
     no_axis = {(k, m):no for no, (k, m) in enumerate([(k, m) for k in ks for m in sub_methods+['']])}
-    file = f'{log_dir}logs/experiment/topk_k/{name.lower()}.log'
+    file = f'{log_dir}logs/topk_k/{name.lower()}.log'
     if not os.path.exists(file):
         continue
     with open(file) as f:

@@ -27,7 +27,7 @@ no_axis = {(s, m):no for no, (s, m) in enumerate([(s, m) for s in sizes for m in
 total_df = pd.DataFrame()
 
 for pos, name in enumerate(datasets):
-    file = f'{log_dir}logs/experiment/threshold_scalability/{name.lower()}.log'
+    file = f'{log_dir}logs/threshold_scalability/{name.lower()}.log'
     if not os.path.exists(file):
         continue
     
@@ -70,12 +70,14 @@ xlim = (-0.05, 4.05)
 xticks = sizes
 no_axis = {(s, m):no for no, (s, m) in enumerate([(s, m) for s in sizes for m in final_methods+['']])}
 
+logy = True
+
 cands_stats = []
 cands_stats2 = []
 for pos, name in enumerate(datasets):
     # if pos!=0:
     #     continue
-    file = f'{log_dir}logs/experiment/threshold_scalability/{name.lower()}.log'
+    file = f'{log_dir}logs/threshold_scalability/{name.lower()}.log'
     if not os.path.exists(file):
         continue
     with open(file) as f:
@@ -89,7 +91,11 @@ for pos, name in enumerate(datasets):
             
             no = no_axis[row['Size'], row['Method']]
             plot_bar(row, no, no_methods, axes)  
-            axes.set_yscale('log')
+            
+            if logy:
+                axes.set_yscale('log')
+                # axes.set_ylim(axes.get_ylim()[0], pow(10,10))
+            
         fix_axes(axes, arange(0.5, len(sizes)*3+0.5, 3),
                   sizes, r'Dataset Size |$\mathcal{D}|$')
         if pos == 0:

@@ -13,7 +13,7 @@ times = {'small': {'TJPJ': 0, 'TJPJ - VU': 0, 'TJPJ - VUL': 0},
 counts = {'small': 0, 'medium': 0, 'large': 0}
 
 for name, dir in dirs.items():
-    file = f'{log_dir}logs/experiment/threshold_verification/{name.lower()}.log'
+    file = f'{log_dir}logs/threshold_verification/{name.lower()}.log'
     if not os.path.exists(file):
         continue
     

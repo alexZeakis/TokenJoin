@@ -23,16 +23,15 @@ $ mvn install
 
 **Step 4** Run the executable:
 ```sh
-$ java -jar target/tokenjoin-0.0.1-SNAPSHOT-jar-with-dependencies.jar --config <config_file> --similarity <similarity> --type <type> --mode <mode> --input <input_dir> --log <log_dir>
+$ java -jar target/tokenjoin-0.0.1-SNAPSHOT-jar-with-dependencies.jar --similarity <similarity> --log <log_file> --input <input_file> --model <model> --delta <delta> --k <k> --verification <verification_algorithm>
 ```
 
 - Similarity values: ["jaccard", "edit"]
-- Type values: ["threshold", "topk", "threshold_scalability", "threshold_verification", "threshold_threshold" ]
-- Mode values: ["experiment"]
-- Input directory: The directory of the datasets
-- Log directory: the directory that the logs will be stored
-
-The selected combination should be included in the corresponding config file.
+- Log File: Log file to append log of execution
+- Input File: Input serialized file. See **Datasets** below.
+- Model values: ["TJ", "TJP", "TJPJ", "SM", "TJK", "SMK", "FJK", "OT"]
+- Delta / K: In threshold executions only **delta** is required. In topk executions, only **k**.
+- Verification values: [0, 1, 2], stands for standard Verification, Verification with Upper Bounds or Verification with Upper and Lower Bounds.
 
 ## Experiment execution
 
@@ -40,49 +39,49 @@ There are 4 groups of experiments conducted in TokenJoin. To reproduce the exper
 
 - Comparing ThresholdJoin methods based on varying thresholds.
 ```sh
-$ ./execution/examples/bash/threshold_run.sh
+$ ./execution/bash/threshold_run.sh
 ```
 
 - Comparing ThresholdJoin methods based on varying dataset sizes.
 ```sh
-$ ./execution/examples/bash/scalability_run.sh
+$ ./execution/bash/scalability_run.sh
 ```
 
 - Comparing Verification methods in ThresholdJoin.
 ```sh
-$ ./execution/examples/bash/verification_run.sh
+$ ./execution/bash/verification_run.sh
 ```
 
 - Comparing TopkJoin methods based on varying k.
 ```sh
-$ ./execution/examples/bash/topk_run.sh
+$ ./execution/bash/topk_run.sh
 ```
 These are wrapper scripts for the 6 individual calls to the 6 datasets.
 
-Notice that in the `execution/examples/` we have smaller collection sizes and lighter JVM specifications. To run the original experimens, follow the same instructions but execute the corresponding scripts in `execution/experiments/`. Also notice that the existing logs inside `execution/experiments/` contain the original results and any new execution will be appended to the end of the file.
+Notice that the existing logs inside `execution/` contain the original results and any new execution will be appended to the end of the file.
 
 ## Construction of plots
 
-For each experiment a separate python script exists to analyse the results from the corresponding log file. The existing plots can be seen in `execution/experiments/plots/` and can be reproduced by running the following commands:
+For each experiment a separate python script exists to analyse the results from the corresponding log file. The existing plots can be seen in `execution/plots/` and can be reproduced by running the following commands:
 
 - Threshold - Threshold
 ```sh
-$ python execution/python/Threshold.py execution/experiments/
+$ python execution/python/Threshold.py execution/
 ```
 
 - Threshold - Scalability
 ```sh
-$ python execution/python/Scalability.py execution/experiments/
+$ python execution/python/Scalability.py execution/
 ```
 
 - Threshold - Verification
 ```sh
-$ python execution/python/Verification.py execution/experiments/
+$ python execution/python/Verification.py execution/
 ```
 
 - Topk 
 ```sh
-$ python execution/python/Topk.py execution/experiments/
+$ python execution/python/Topk.py execution/
 ```
 
 
@@ -102,5 +101,5 @@ We have used six real-world datasets:
 
 - [MIND](https://msnews.github.io): 123,130 articles from the MIcrosoft News Dataset. Each set corresponds to an article. The elements are the words in its abstract.
 
-The preprocessed versions of the datasets used in the experiments can be found [here](https://drive.google.com/drive/folders/1u9ixJM25koPkHi8FJ0atrHL1WcE8dtLw?usp=sharing).
+The preprocessed csv versions of the datasets used in the experiments can be found [here](https://drive.google.com/drive/folders/1u9ixJM25koPkHi8FJ0atrHL1WcE8dtLw?usp=sharing). It is also necessary to preprocess the csv files with the code found [here](https://github.com/alexZeakis/TokenJoin_preprocessing).
 

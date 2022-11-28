@@ -64,7 +64,7 @@ def save_legend_cands(sub_methods, filename):
     fig.add_subplot(111)
     
     filters = [('#f5ba87', 'CF (SM)'), ('#ff7f0e', 'NNF (SM)'), 
-               ('#abd2ed', 'Pre-Refinement (TJ)'),
+               # ('#abd2ed', 'Pre-Refinement (TJ)'),
                ('#6eb8eb', 'Basic (TJ)'), ('#3c8ec7', 'Positional (TJP)'),
                ('#1f77b4', 'Joint (TJPJ)'), 
                ('#fff', '//', 'VER'), ('#fff', '.', 'Matches')]
@@ -167,7 +167,7 @@ def prepare_terms(l, sub_methods, norm=False):
 
 
         
-def plot_bar(row, no, no_methods, axes, linewidth=3):
+def plot_bar(row, no, no_methods, axes, linewidth=3, width=0.95):
     # total = row['P1']+row['P2']+row['Verification']
     if row['Method'] == 'SM':
         filters = [('#f5ba87', 'N_CG'), ('#ff7f0e', 'N_CF'), ('#ff7f0e', 'N_NNF')] 
@@ -182,11 +182,11 @@ def plot_bar(row, no, no_methods, axes, linewidth=3):
             continue
         axes.bar(no, row[filt], color=c,
                  #hatch=hatches[no % no_methods],
-                 width=0.95, linewidth=linewidth, edgecolor='black')
+                 width=width, linewidth=linewidth, edgecolor='black')
 
-    axes.bar(no, row[filters[-1][1]], color='#fff', width=0.95, hatch='\\',
+    axes.bar(no, row[filters[-1][1]], color='#fff', width=width, hatch='\\',
               linewidth=linewidth, edgecolor='black')
-    axes.bar(no, row['N_Matches'], color='#fff', width=0.95, hatch='.',
+    axes.bar(no, row['N_Matches'], color='#fff', width=width, hatch='.',
              linewidth=linewidth, edgecolor='black')
         
         
@@ -194,6 +194,11 @@ def fix_axes(axes, xticks, xticklabels, xlabel):
     axes.set_xticks(xticks)
     axes.set_xticklabels(xticklabels)
     axes.set_xlabel(xlabel)
+    
+    # print()
+    axes.set_xlim(axes.get_xlim()[0], xticks[-1]+2)
+    # print(xticks)
+    # print(axes.get_xlim())
     
     
 def make_broken(ax0, ax1):
