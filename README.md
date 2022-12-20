@@ -33,6 +33,8 @@ $ java -jar target/tokenjoin-0.0.1-SNAPSHOT-jar-with-dependencies.jar --similari
 - Delta / K: In threshold executions only **delta** is required. In topk executions, only **k**.
 - Verification values: [0, 1, 2], stands for standard Verification, Verification with Upper Bounds or Verification with Upper and Lower Bounds.
 
+You can also find a python implementation [here](https://github.com/alexZeakis/pyTokenJoin/).
+
 ## Experiment execution
 
 There are 4 groups of experiments conducted in TokenJoin. To reproduce the experiments mentioned in the paper, run the following commands.
