@@ -41,22 +41,22 @@ There are 4 groups of experiments conducted in TokenJoin. To reproduce the exper
 
 - Comparing ThresholdJoin methods based on varying thresholds.
 ```sh
-$ ./execution/bash/threshold_run.sh
+$ ./execution/bash/threshold_run.sh <data_dir>
 ```
 
 - Comparing ThresholdJoin methods based on varying dataset sizes.
 ```sh
-$ ./execution/bash/scalability_run.sh
+$ ./execution/bash/scalability_run.sh <data_dir>
 ```
 
 - Comparing Verification methods in ThresholdJoin.
 ```sh
-$ ./execution/bash/verification_run.sh
+$ ./execution/bash/verification_run.sh <data_dir>
 ```
 
 - Comparing TopkJoin methods based on varying k.
 ```sh
-$ ./execution/bash/topk_run.sh
+$ ./execution/bash/topk_run.sh <data_dir>
 ```
 These are wrapper scripts for the 6 individual calls to the 6 datasets.
 
